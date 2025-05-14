@@ -1,0 +1,3 @@
+opencv-python
+stable-baselines3
+gymnasium
