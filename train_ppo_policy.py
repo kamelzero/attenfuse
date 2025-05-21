@@ -8,6 +8,6 @@ time.sleep(5)
 env = CarlaFusionEnv()  # your custom wrapper
 check_env(env)
 
-model = PPO("MlpPolicy", env, verbose=1)
-model.learn(total_timesteps=100) #100_000)
+model = PPO("MultiInputPolicy", env, verbose=1, device="cuda")
+model.learn(total_timesteps=100_000)
 model.save("ppo_attention_agent")

@@ -48,9 +48,9 @@ class CarlaFusionEnv(gym.Env):
 
         # Observation and action space
         self.observation_space = gym.spaces.Dict({
-            'rgb': gym.spaces.Box(0, 1, shape=(3, 128, 128), dtype=np.float32),
-            'depth': gym.spaces.Box(0, 1, shape=(1, 128, 128), dtype=np.float32),
-            'lidar': gym.spaces.Box(0, 1, shape=(1, 200, 200), dtype=np.float32),
+            'rgb': gym.spaces.Box(0, 255, shape=(3, 128, 128), dtype=np.uint8),
+            'depth': gym.spaces.Box(0, 255, shape=(1, 128, 128), dtype=np.uint8),
+            'lidar': gym.spaces.Box(0, 255, shape=(1, 200, 200), dtype=np.uint8),
         })
         self.action_space = gym.spaces.Discrete(3)  # left, straight, right
 
@@ -102,6 +102,8 @@ class CarlaFusionEnv(gym.Env):
         
         observation = self._get_obs()
         info = {}  # You can populate this with metadata if needed
+
+        self.step_counter = 0
         return observation, info
 
     def step(self, action):
@@ -136,18 +138,35 @@ class CarlaFusionEnv(gym.Env):
         self.world.tick() #  Only do this when you are not also running other client scripts, or you'll get race conditions.
         obs = self._get_obs()
 
-        reward = 1.0  # Placeholder reward
-        done = False
-        return obs, reward, done, {}
+        # Count low-speed frames
+        self.stuck_counter = getattr(self, "stuck_counter", 0)
+        if speed < 0.5:
+            self.stuck_counter += 1
+        else:
+            self.stuck_counter = 0
+
+        # Encourage movement
+        reward = speed / 10.0
+        terminated = self.stuck_counter > 30  # ~1.5 seconds stuck
+        if terminated:
+            reward -= 5.0
+        # Penalize being stuck
+        if speed < 0.5:
+            reward -= 0.1  # mild penalty every step
+
+        self.step_counter = getattr(self, "step_counter", 0)
+        self.step_counter += 1
+        truncated = self.step_counter >= 200  # ~10 seconds
+        return obs, reward, terminated, truncated, {}
 
     def _get_obs(self):
         while self.rgb_data is None or self.depth_data is None or self.lidar_data is None:
             time.sleep(0.05)
 
-        # RGB processing
+        # RGB: [0, 255] and uint8
         rgb = np.frombuffer(self.rgb_data.raw_data, dtype=np.uint8).reshape((600, 800, 4))[:, :, :3]
         rgb = cv2.resize(rgb, (128, 128))
-        rgb = rgb.transpose(2, 0, 1).astype(np.float32) / 255.0
+        rgb = rgb.transpose(2, 0, 1).astype(np.uint8)
 
         # Depth processing - ensure float32
         raw_depth = np.frombuffer(self.depth_data.raw_data, dtype=np.uint8).reshape((600, 800, 4))
@@ -155,6 +174,8 @@ class CarlaFusionEnv(gym.Env):
         depth_meters = depth_raw / (256 ** 3 - 1) * 1000
         depth = cv2.resize(depth_meters, (128, 128))[np.newaxis, :, :].astype(np.float32)
         depth = np.clip(depth, 0, 100.0) / 100.0
+        # Depth: normalize to [0, 255] and convert to uint8
+        depth = (depth * 255).clip(0, 255).astype(np.uint8)
 
         # LiDAR processing - ensure float32
         lidar_array = np.frombuffer(self.lidar_data.raw_data, dtype=np.float32).reshape(-1, 4)[:, :3]
@@ -164,6 +185,8 @@ class CarlaFusionEnv(gym.Env):
         mask = (x >= 0) & (x < 200) & (y >= 0) & (y < 200)
         bev[y[mask], x[mask]] = 1.0
         lidar = bev[np.newaxis, :, :].astype(np.float32)
+        # LiDAR: BEV binary already in [0, 1], scale to [0, 255]
+        lidar = (lidar * 255).astype(np.uint8)
 
         return {
             'rgb': rgb,
