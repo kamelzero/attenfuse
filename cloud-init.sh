@@ -20,7 +20,7 @@ sudo chmod +x /usr/local/bin/docker-compose
 
 # Clone the project repository
 cd /home/ubuntu
-git clone https://kamelzero:${github_token}@github.com/kamelzero/attenfuse.git
+git clone https://oauth2:${github_token}@github.com/kamelzero/attenfuse.git
 chown -R ubuntu:ubuntu attenfuse
 
 # Configure AWS credentials from instance profile
@@ -39,6 +39,8 @@ source /etc/environment
 # Ensure the environment variable is available to the docker-compose service
 echo "export BUCKET_NAME=${bucket_name}" >> /home/ubuntu/.bashrc
 
-# Start the docker services
-cd attenfuse/docker
-docker-compose up -d
+# Pull Docker images
+cd /home/ubuntu/attenfuse/docker
+docker compose pull
+
+# Don't start services here

@@ -16,7 +16,20 @@ fi
 
 echo "Found instance at: $INSTANCE_IP"
 
+# Wait for cloud-init to complete
+echo "Waiting for cloud-init to complete..."
+ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no ubuntu@${INSTANCE_IP} \
+    'cloud-init status --wait'
+
+if [ $? -ne 0 ]; then
+    echo "Error: cloud-init failed to complete"
+    exit 1
+fi
+
+echo "Cloud-init completed successfully"
+
 # SSH into the instance and start the Docker container
+echo "Starting Docker container..."
 ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no ubuntu@${INSTANCE_IP} \
     "cd ~/attenfuse/docker && docker compose up -d"
 

@@ -64,28 +64,25 @@ resource "aws_iam_instance_profile" "ec2_profile" {
 
 resource "aws_instance" "carla" {
   ami           = var.ami_id
-  instance_type = "t2.micro"  # You might want to make this a variable too
   key_name               = aws_key_pair.carla_key.key_name
   security_groups        = [aws_security_group.carla_sg.name]
+  instance_type = "g4dn.xlarge"  #g5.xlarge" # You might want to make this a variable too
   instance_market_options {
     market_type = "spot"
     spot_options {
       max_price = "0.50"
-      spot_instance_type = "persistent"
-      instance_interruption_behavior = "stop"
+      instance_interruption_behavior = "terminate"
     }
   }
   iam_instance_profile = aws_iam_instance_profile.ec2_profile.name
 
-  user_data = templatefile("${path.module}/../cloud-init.sh", {
-    aws_region  = var.aws_region
-    bucket_name = aws_s3_bucket.logs.id
-    github_token = var.github_token
-  })
+  user_data = data.template_file.cloud_init.rendered
 
   tags = {
     Name    = "carla-rl"
     Project = "carla-rl"
+    Environment = terraform.workspace
+    CreatedAt = timestamp()
   }
 
   root_block_device {

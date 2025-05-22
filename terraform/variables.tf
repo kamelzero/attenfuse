@@ -11,9 +11,9 @@ variable "root_volume_size" {
 }
 
 variable "ami_id" {
-  description = "AMI ID for the EC2 instance (Ubuntu 22.04 LTS)"
+  description = "AMI ID for the EC2 instance"
   type        = string
-  default     = "ami-0fcdcdcc9cf0407ae"  # Update this for your region
+  default     = "ami-your-new-ami-id"  # Update with the ID from step 2
 }
 
 variable "aws_region" {
