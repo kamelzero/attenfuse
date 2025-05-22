@@ -25,10 +25,12 @@ resource "aws_security_group" "carla_sg" {
 }
 
 data "template_file" "cloud_init" {
-  template = file("${path.module}/cloud-init.sh")
+  template = file("${path.module}/../cloud-init.sh")
 
   vars = {
     bucket_name = aws_s3_bucket.logs.bucket
+    aws_region  = var.aws_region
+    github_token = var.github_token
   }
 }
 
@@ -69,11 +71,17 @@ resource "aws_instance" "carla" {
     market_type = "spot"
     spot_options {
       max_price = "0.50"
+      spot_instance_type = "persistent"
+      instance_interruption_behavior = "stop"
     }
   }
   iam_instance_profile = aws_iam_instance_profile.ec2_profile.name
 
-  user_data = data.template_file.cloud_init.rendered
+  user_data = templatefile("${path.module}/../cloud-init.sh", {
+    aws_region  = var.aws_region
+    bucket_name = aws_s3_bucket.logs.id
+    github_token = var.github_token
+  })
 
   tags = {
     Name    = "carla-rl"

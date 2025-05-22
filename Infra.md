@@ -6,7 +6,7 @@ This setup gives you a clean, modular workflow for running your RL experiments w
 ## Folder Structure
 
 ```
-carla-project/
+attenfuse/
 ├── Dockerfile.base
 ├── docker-compose.yml
 ├── requirements.txt

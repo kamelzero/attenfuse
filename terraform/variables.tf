@@ -15,3 +15,15 @@ variable "ami_id" {
   type        = string
   default     = "ami-0fcdcdcc9cf0407ae"  # Update this for your region
 }
+
+variable "aws_region" {
+  description = "AWS region to deploy resources"
+  type        = string
+  default     = "us-east-1"  # Optional default value
+}
+
+variable "github_token" {
+  description = "GitHub Personal Access Token"
+  type        = string
+  sensitive   = true
+}

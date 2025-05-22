@@ -21,17 +21,18 @@ aws configure
 ## 📁 Complete Directory Structure
 
 ```
-carla-project/
+attenfuse/
 ├── terraform/
 │   ├── main.tf
 │   ├── variables.tf
 │   ├── outputs.tf
 │   ├── backend.tf
-│   ├── setup_backend.sh
-│   ├── cloud-init.sh
-│   ├── docker-compose.yml
+│   └── setup_backend.sh
+├── docker/
 │   ├── Dockerfile.base
 │   └── requirements.txt
+├── docker-compose.yml
+├── cloud-init.sh
 ├── launch_training.sh
 └── src/
     └── train.py
@@ -63,7 +64,7 @@ The `backend.tf` file is configured to use these resources automatically.
 ### `main.tf`
 - Update the AMI ID (specific to your AWS region):
 ```hcl
-ami = "ami-0284440fc8de0d5e8"
+ami = "ami-0fcdcdcc9cf0407ae"
 ```
 
 - Update SSH key path to match your local key:
@@ -140,7 +141,7 @@ This script:
 ### Or manually:
 ```bash
 ssh -i ~/.ssh/id_ed25519 ubuntu@<public-ip>
-cd ~/carla-project/
+cd ~/attenfuse/
 docker compose build
 docker compose up -d
 ```
@@ -177,3 +178,29 @@ terraform destroy
 - The S3 bucket name can be found in Terraform outputs after deployment
 - Terraform state is stored remotely in S3, allowing team collaboration
 - State locking via DynamoDB prevents concurrent modifications
+
+## GitHub Token Setup
+
+To allow EC2 instances to clone the private repository, you need to create a GitHub Personal Access Token (PAT) with the correct permissions:
+
+1. Go to GitHub.com and sign in
+2. Click your profile picture → Settings
+3. Scroll down to "Developer settings" (bottom of left sidebar)
+4. Click "Personal access tokens" → "Tokens (classic)"
+5. Click "Generate new token" → "Generate new token (classic)"
+6. Configure the token:
+   - Note: "CARLA EC2 Clone" (or similar descriptive name)
+   - Expiration: Choose as needed (e.g., 90 days)
+   - Permissions:
+     - Select "repo" (this includes Contents: Read access needed for cloning)
+   - Click "Generate token"
+   - **Important**: Copy the token immediately - it won't be shown again
+
+7. Add the token to `terraform/terraform.tfvars`:
+   ```hcl
+   github_token = "ghp_your_new_token_here"
+   ```
+
+8. Ensure `terraform.tfvars` is in `.gitignore` to prevent committing the token
+
+Note: The minimum required permission is "Contents: Read" under Repository permissions, but selecting the "repo" scope is simpler and ensures all necessary read access.
