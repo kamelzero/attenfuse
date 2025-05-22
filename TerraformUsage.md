@@ -26,6 +26,8 @@ carla-project/
 │   ├── main.tf
 │   ├── variables.tf
 │   ├── outputs.tf
+│   ├── backend.tf
+│   ├── setup_backend.sh
 │   ├── cloud-init.sh
 │   ├── docker-compose.yml
 │   ├── Dockerfile.base
@@ -34,6 +36,25 @@ carla-project/
 └── src/
     └── train.py
 ```
+
+---
+
+## 🔒 Setting Up Remote State Storage
+
+Before initializing Terraform, you need to set up remote state storage. This ensures your Terraform state is stored securely in S3 and can be shared across team members.
+
+### Step 1: Configure Backend Infrastructure
+```bash
+cd terraform/
+./setup_backend.sh
+```
+
+This script creates:
+- An S3 bucket for storing Terraform state
+- A DynamoDB table for state locking
+- Required IAM permissions
+
+The `backend.tf` file is configured to use these resources automatically.
 
 ---
 
@@ -84,10 +105,11 @@ Terraform will create:
 
 ## 🛠️ Deploying Infrastructure
 
-### Step 1: Initialize Terraform
+### Step 1: Initialize Terraform with Backend
 ```bash
 cd terraform/
 terraform init
+# Terraform will automatically use the S3 backend configured in backend.tf
 ```
 
 ### Step 2: Preview Deployment
@@ -153,3 +175,5 @@ terraform destroy
 - The container will mount `src/` as `/app` for live editing
 - Logs and models are automatically synced to the created S3 bucket
 - The S3 bucket name can be found in Terraform outputs after deployment
+- Terraform state is stored remotely in S3, allowing team collaboration
+- State locking via DynamoDB prevents concurrent modifications

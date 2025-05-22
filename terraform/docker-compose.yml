@@ -1,18 +1,13 @@
-version: '3.8'
+version: '3'
 
 services:
-  carla_rl:
-    container_name: carla_rl
-    image: carla-rl-base
+  carla:
     build:
       context: .
       dockerfile: Dockerfile.base
-    runtime: nvidia
-    environment:
-      - AWS_REGION=us-east-1
-      - BUCKET_NAME=${BUCKET_NAME:-my-carla-logs-bucket}
     volumes:
-      - ./src:/app              # Mounts your source code for live editing
-      - ~/.aws:/root/.aws:ro    # Optional: read-only AWS credentials
-    command: >
-      bash -c "python train.py"
+      - ./src:/app/src  # Mount local src directory into container
+    working_dir: /app/src
+    environment:
+      - BUCKET_NAME=${BUCKET_NAME:-attenfuse-carla-logs-bucket}
+    command: bash -c "echo 'Please replace this with your training command' && tail -f /dev/null"

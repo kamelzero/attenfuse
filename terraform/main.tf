@@ -32,9 +32,37 @@ data "template_file" "cloud_init" {
   }
 }
 
-resource "aws_instance" "carla_instance" {
-  ami                    = "ami-0fcdcdcc9cf0407ae"  # Deep Learning AMI (Ubuntu 22.04) us-east-1
-  instance_type          = "g4dn.xlarge"
+# Create IAM role for EC2 instance
+resource "aws_iam_role" "ec2_role" {
+  name = "carla_ec2_role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+      }
+    ]
+  })
+
+  tags = {
+    Name = "CARLA EC2 Role"
+  }
+}
+
+# Create instance profile to attach the role to EC2
+resource "aws_iam_instance_profile" "ec2_profile" {
+  name = "carla_ec2_profile"
+  role = aws_iam_role.ec2_role.name
+}
+
+resource "aws_instance" "carla" {
+  ami           = var.ami_id
+  instance_type = "t2.micro"  # You might want to make this a variable too
   key_name               = aws_key_pair.carla_key.key_name
   security_groups        = [aws_security_group.carla_sg.name]
   instance_market_options {
@@ -43,6 +71,7 @@ resource "aws_instance" "carla_instance" {
       max_price = "0.50"
     }
   }
+  iam_instance_profile = aws_iam_instance_profile.ec2_profile.name
 
   user_data = data.template_file.cloud_init.rendered
 
@@ -52,17 +81,18 @@ resource "aws_instance" "carla_instance" {
   }
 
   root_block_device {
-    volume_size = 100
+    volume_size = var.root_volume_size
+    volume_type = "gp2"
   }
 }
 
 output "public_ip" {
-  value = aws_instance.carla_instance.public_ip
+  value = aws_instance.carla.public_ip
 }
 
 # S3 bucket for logs
 resource "aws_s3_bucket" "logs" {
-  bucket        = "my-carla-logs-bucket"
+  bucket        = var.bucket_name
   force_destroy = true
 
   tags = {
