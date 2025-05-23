@@ -18,10 +18,18 @@ sudo usermod -aG docker ubuntu
 sudo curl -L "https://github.com/docker/compose/releases/download/v2.24.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
 sudo chmod +x /usr/local/bin/docker-compose
 
-# Clone the project repository
-cd /home/ubuntu
-git clone https://oauth2:${github_token}@github.com/kamelzero/attenfuse.git
-chown -R ubuntu:ubuntu attenfuse
+# Fetch GitHub token from Parameter Store
+GITHUB_TOKEN=$${aws ssm get-parameter \
+    --name "/carla-rl/github-token" \
+    --with-decryption \
+    --query "Parameter.Value" \
+    --output text}
+
+# Clone the repository using the token
+git clone https://oauth2:$${GITHUB_TOKEN}@github.com/kamelzero/attenfuse.git /home/ubuntu/attenfuse
+
+# Clear the token from memory
+unset GITHUB_TOKEN
 
 # Configure AWS credentials from instance profile
 mkdir -p /home/ubuntu/.aws

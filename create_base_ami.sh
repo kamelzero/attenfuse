@@ -33,11 +33,15 @@ sleep 30  # Give instance time to initialize
 ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no ubuntu@${INSTANCE_IP} \
     'cloud-init status --wait'
 
+# Generate AMI name with timestamp
+TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+AMI_NAME="carla-rl-base-${TIMESTAMP}"
+
 # Create AMI
 echo "Creating AMI..."
 AMI_ID=$(aws ec2 create-image \
     --instance-id $INSTANCE_ID \
-    --name "carla-rl-base-$(date +%Y%m%d)" \
+    --name $AMI_NAME \
     --description "CARLA RL base image with Docker images pre-pulled" \
     --output text)
 

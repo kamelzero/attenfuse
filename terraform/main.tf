@@ -2,6 +2,9 @@ provider "aws" {
   region = "us-east-1"
 }
 
+data "aws_region" "current" {}
+data "aws_caller_identity" "current" {}
+
 resource "aws_key_pair" "carla_key" {
   key_name   = "carla_rl_key"
   public_key = file("~/.ssh/id_ed25519.pub")
@@ -30,7 +33,6 @@ data "template_file" "cloud_init" {
   vars = {
     bucket_name = aws_s3_bucket.logs.bucket
     aws_region  = var.aws_region
-    github_token = var.github_token
   }
 }
 
@@ -67,13 +69,13 @@ resource "aws_instance" "carla" {
   key_name               = aws_key_pair.carla_key.key_name
   security_groups        = [aws_security_group.carla_sg.name]
   instance_type = "g4dn.xlarge"  #g5.xlarge" # You might want to make this a variable too
-  instance_market_options {
-    market_type = "spot"
-    spot_options {
-      max_price = "0.50"
-      instance_interruption_behavior = "terminate"
-    }
-  }
+  # instance_market_options {
+  #   market_type = "spot"
+  #   spot_options {
+  #     max_price = "0.50"
+  #     instance_interruption_behavior = "terminate"
+  #   }
+  # }
   iam_instance_profile = aws_iam_instance_profile.ec2_profile.name
 
   user_data = data.template_file.cloud_init.rendered
@@ -123,6 +125,26 @@ resource "aws_iam_role_policy" "s3_access" {
         Resource = [
           aws_s3_bucket.logs.arn,
           "${aws_s3_bucket.logs.arn}/*"
+        ]
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy" "ec2_parameter_store" {
+  name = "ec2-parameter-store-access"
+  role = aws_iam_role.ec2_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ssm:GetParameter"
+        ]
+        Resource = [
+          "arn:aws:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter/carla-rl/*"
         ]
       }
     ]

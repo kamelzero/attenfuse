@@ -179,39 +179,45 @@ terraform destroy
 - Terraform state is stored remotely in S3, allowing team collaboration
 - State locking via DynamoDB prevents concurrent modifications
 
-## GitHub Token Setup
+## GitHub Token Setup with AWS Parameter Store
 
-To allow EC2 instances to clone the private repository, you need to create a GitHub Personal Access Token (PAT) and configure it properly:
+Before running Terraform, you need to store your GitHub token securely in AWS Parameter Store:
 
-1. Create a GitHub PAT:
+1. Create a GitHub Personal Access Token (PAT):
    - Go to GitHub.com → Settings → Developer settings → Personal access tokens
    - Generate new token (classic)
    - Set appropriate permissions (at minimum "repo" access)
    - Copy the token immediately after generation
 
-2. Add the token to `terraform/variables.tf`:
-```hcl
-variable "github_token" {
-  description = "GitHub Personal Access Token for repository access"
-  type        = string
-  sensitive   = true
-}
-```
+2. Store the token in AWS Parameter Store:
+   ```bash
+   aws ssm put-parameter \
+       --name "/carla-rl/github-token" \
+       --value "your-github-token" \
+       --type "SecureString" \
+       --description "GitHub token for carla-rl repo access"
+   ```
 
-3. Create `terraform/terraform.tfvars` (make sure it's in .gitignore):
-```hcl
-github_token = "your_github_pat_here"
-```
+3. Verify the parameter was created:
+   ```bash
+   aws ssm get-parameter \
+       --name "/carla-rl/github-token" \
+       --with-decryption
+   ```
 
-4. Update your `main.tf` to pass the token to cloud-init:
-```hcl
-user_data = templatefile("${path.module}/cloud-init.sh", {
-  github_token = var.github_token
-  // ... other variables ...
-})
-```
+The cloud-init script will automatically fetch this token when launching new instances, keeping your GitHub credentials secure and out of version control.
 
-**Important**: Ensure `terraform.tfvars` is in your `.gitignore` to prevent accidentally committing your token.
+**Important**: 
+- Never commit GitHub tokens to version control
+- Rotate your GitHub token periodically
+- To update the token, use the `put-parameter` command with `--overwrite`:
+   ```bash
+   aws ssm put-parameter \
+       --name "/carla-rl/github-token" \
+       --value "your-new-github-token" \
+       --type "SecureString" \
+       --overwrite
+   ```
 
 ## Creating a Base AMI
 
