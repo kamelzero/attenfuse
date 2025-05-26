@@ -1,0 +1,6 @@
+
+# Minimal RL/vision dependencies
+numpy
+gym
+matplotlib
+torchvision

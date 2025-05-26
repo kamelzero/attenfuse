@@ -67,3 +67,91 @@ For a modest GPU, e.g. RTX 3080M:
     ```bash
     torch.cuda.is_available() == True
     ```
+
+# CARLA RL Setup
+
+This repository contains the setup for running CARLA with reinforcement learning.
+
+## Infrastructure Setup
+
+1. Configure AWS credentials and region:
+
+```bash
+export AWS_DEFAULT_REGION=us-west-2
+```
+
+```bash
+cd terraform
+terraform init
+terraform apply
+```
+
+## Instance Setup
+
+The following steps are automated in cloud-init.sh:
+
+1. System dependencies:
+
+```bash
+sudo apt-get update && sudo apt-get install -y xvfb
+sudo mkdir -p /tmp/xdg-runtime-dir
+sudo chmod 700 /tmp/xdg-runtime-dir
+```
+
+2. GitHub token (automated in create_base_ami.sh):
+
+```bash
+# Copy token from us-east-1 to us-west-2
+GITHUB_TOKEN=$(aws ssm get-parameter \
+--region us-east-1 \
+--name "/carla-rl/github-token" \
+--with-decryption \
+--query "Parameter.Value" \
+--output text)
+aws ssm put-parameter \
+--region us-west-2 \
+--name "/carla-rl/github-token" \
+--type SecureString \
+--value "$GITHUB_TOKEN"
+```
+
+## Running CARLA
+
+1. Start CARLA server:
+
+```bash
+cd $CARLA_ROOT
+./CarlaUE4.sh -RenderOffScreen -quality-level=Low
+```
+
+2. Clone the repository and pull Docker images:
+
+```bash
+docker run \
+--privileged \
+--gpus all \
+--net=host \
+--runtime=nvidia \
+carlasim/carla:0.9.14 \
+./CarlaUE4.sh -RenderOffScreen -nosound -carla-rpc-port=2000
+```
+
+2. In another terminal, test the setup:
+
+```bash
+docker-compose run --rm carla-client python3 docker/test_carla.py
+```
+
+## Components
+
+- `docker-compose.yml`: Defines CARLA server and client services
+- `Dockerfile.base`: Python environment with CARLA client
+- `test_carla.py`: Basic connection test
+- `test_carla_advanced.py`: Vehicle spawning and autopilot test
+- `test_carla_with_images.py`: Camera capture test
+
+## Notes
+
+- CARLA server runs headless with -RenderOffScreen
+- Images are saved as carla_image_*.png in project root
+- Client uses CARLA Python API version 0.9.15 with server 0.9.14

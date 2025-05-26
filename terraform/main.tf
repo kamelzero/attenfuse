@@ -1,5 +1,5 @@
 provider "aws" {
-  region = "us-east-1"
+  region = var.aws_region
 }
 
 data "aws_region" "current" {}
@@ -77,6 +77,7 @@ resource "aws_instance" "carla" {
   #   }
   # }
   iam_instance_profile = aws_iam_instance_profile.ec2_profile.name
+  availability_zone    = "${var.aws_region}b"
 
   user_data = data.template_file.cloud_init.rendered
 
@@ -95,6 +96,10 @@ resource "aws_instance" "carla" {
 
 output "public_ip" {
   value = aws_instance.carla.public_ip
+}
+
+output "instance_id" {
+  value = aws_instance.carla.id
 }
 
 # S3 bucket for logs
@@ -141,10 +146,12 @@ resource "aws_iam_role_policy" "ec2_parameter_store" {
       {
         Effect = "Allow"
         Action = [
-          "ssm:GetParameter"
+          "ssm:GetParameter",
+          "ssm:GetParameters"
         ]
         Resource = [
-          "arn:aws:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter/carla-rl/*"
+          "arn:aws:ssm:us-east-1:${data.aws_caller_identity.current.account_id}:parameter/carla-rl/*",
+          "arn:aws:ssm:us-west-2:${data.aws_caller_identity.current.account_id}:parameter/carla-rl/*"
         ]
       }
     ]

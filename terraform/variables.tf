@@ -13,11 +13,11 @@ variable "root_volume_size" {
 variable "ami_id" {
   description = "AMI ID for the EC2 instance"
   type        = string
-  default     = "ami-0ebecc2f7d90f55a9"  # Update with the ID from step 2
+  default     = "ami-05bf0277baf7fcb3e"  # Update with the ID from step 2
 }
 
 variable "aws_region" {
   description = "AWS region to deploy resources"
   type        = string
-  default     = "us-east-1"  # Optional default value
+  default     = "us-west-2"  # Optional default value
 }
