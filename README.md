@@ -155,3 +155,36 @@ docker-compose run --rm carla-client python3 docker/test_carla.py
 - CARLA server runs headless with -RenderOffScreen
 - Images are saved as carla_image_*.png in project root
 - Client uses CARLA Python API version 0.9.15 with server 0.9.14
+
+## Training
+
+The repository includes reinforcement learning training infrastructure using PPO (Proximal Policy Optimization):
+
+### Available Training Scripts
+- `train_ppo_policy.py`: Basic PPO training implementation
+- `ppo_attention_training.py`: Advanced training with attention-based sensor fusion
+
+### Running Training
+
+1. Start CARLA in headless mode:
+```bash
+./CarlaUE4.sh -RenderOffScreen -quality-level=Low
+```
+
+2. Launch training:
+```bash
+python src/train_ppo_policy.py  # For basic training
+# or
+python src/ppo_attention_training.py  # For attention-based training
+```
+
+### Current Status
+The training infrastructure is functional but under active development. Planned improvements include:
+- Enhanced hyperparameter tuning
+- Better logging and checkpointing
+- Learning rate scheduling
+- Improved reward shaping
+- Evaluation during training
+- Experiments with GRPO (Group Relative Policy Optimization) for better policy learning
+
+For optimal training performance, refer to the "Tips to Optimize Training" section above.
