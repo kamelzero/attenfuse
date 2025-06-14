@@ -26,8 +26,8 @@ services:
 
   carla-client:
     build:
-      context: .
-      dockerfile: Dockerfile.base
+      context: ..
+      dockerfile: docker/Dockerfile.base
     image: docker-carla
     volumes:
       - ..:/workspace
