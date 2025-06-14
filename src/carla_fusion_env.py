@@ -8,9 +8,12 @@ import cv2
 import random
 
 class CarlaFusionEnv(gym.Env):
-    def __init__(self, rear_chase_camera=True, random_spawn=True, map_name="Town03"):
+    def __init__(self, rear_chase_camera=True, random_spawn=True, map_name="Town03", reward_fn=None):
         super().__init__()
 
+        # Store reward function
+        self.reward_fn = reward_fn or self._default_reward_fn
+        
         # Connect to CARLA
         self.client = carla.Client('localhost', 2000)
         self.client.set_timeout(10.0)
@@ -135,7 +138,7 @@ class CarlaFusionEnv(gym.Env):
                 carla.Rotation(pitch=-90)
             ))
 
-        self.world.tick() #  Only do this when you are not also running other client scripts, or you'll get race conditions.
+        self.world.tick()
         obs = self._get_obs()
 
         # Count low-speed frames
@@ -145,14 +148,12 @@ class CarlaFusionEnv(gym.Env):
         else:
             self.stuck_counter = 0
 
-        # Encourage movement
-        reward = speed / 10.0
-        terminated = self.stuck_counter > 30  # ~1.5 seconds stuck
-        if terminated:
-            reward -= 5.0
-        # Penalize being stuck
-        if speed < 0.5:
-            reward -= 0.1  # mild penalty every step
+        # Get reward and termination from reward function
+        reward, terminated = self.reward_fn(
+            speed=speed,
+            stuck_counter=self.stuck_counter,
+            step_counter=getattr(self, "step_counter", 0)
+        )
 
         self.step_counter = getattr(self, "step_counter", 0)
         self.step_counter += 1
@@ -212,3 +213,13 @@ class CarlaFusionEnv(gym.Env):
                 sensor.stop()
                 sensor.destroy()
         self.rgb, self.depth, self.lidar = None, None, None
+
+    def _default_reward_fn(self, speed, stuck_counter, step_counter):
+        """Default reward function that can be overridden."""
+        reward = speed / 10.0
+        terminated = stuck_counter > 30  # ~1.5 seconds stuck
+        if terminated:
+            reward -= 5.0
+        if speed < 0.5:
+            reward -= 0.1
+        return reward, terminated

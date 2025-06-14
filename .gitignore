@@ -6,3 +6,5 @@ __pycache__
 *.tfvars
 *.tfplan
 *.zip
+.env
+.venv

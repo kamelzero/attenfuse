@@ -161,8 +161,8 @@ docker-compose run --rm carla-client python3 docker/test_carla.py
 The repository includes reinforcement learning training infrastructure using PPO (Proximal Policy Optimization):
 
 ### Available Training Scripts
+- `train_ppo_attention.py`: PPO training with attention-based sensor fusion and configurable reward function
 - `train_ppo_policy.py`: Basic PPO training implementation
-- `ppo_attention_training.py`: Advanced training with attention-based sensor fusion
 
 ### Running Training
 
@@ -173,9 +173,28 @@ The repository includes reinforcement learning training infrastructure using PPO
 
 2. Launch training:
 ```bash
-python src/train_ppo_policy.py  # For basic training
+python src/train_ppo_attention.py  # For attention-based training with custom rewards
 # or
-python src/ppo_attention_training.py  # For attention-based training
+python src/train_ppo_policy.py  # For basic training
+```
+
+### Reward Function
+The environment supports custom reward functions to shape the learning behavior. Example from `train_ppo_attention.py`:
+```python
+def custom_reward_fn(speed, stuck_counter, step_counter):
+    # Base reward for moving
+    reward = speed / 15.0
+    
+    # Penalize being stuck
+    if speed < 1.0:
+        reward -= 0.2
+    
+    # Terminate if stuck for too long
+    terminated = stuck_counter > 20
+    if terminated:
+        reward -= 8.0
+    
+    return reward, terminated
 ```
 
 ### Current Status
@@ -188,3 +207,52 @@ The training infrastructure is functional but under active development. Planned 
 - Experiments with GRPO (Group Relative Policy Optimization) for better policy learning
 
 For optimal training performance, refer to the "Tips to Optimize Training" section above.
+
+## Running on EC2
+
+### 1. Launch the Instance
+```bash
+cd terraform
+terraform init
+terraform apply
+```
+
+### 2. Start the Environment and Training
+```bash
+# Just set up the environment
+./launch_training.sh --setup
+
+# Or set up and run tests
+./launch_training.sh --test
+
+# Or set up and start training
+./launch_training.sh --train
+```
+
+### 3. Connect to the Instance (if needed)
+```bash
+# Get the instance IP
+INSTANCE_IP=$(aws ec2 describe-instances \
+    --filters "Name=tag:Project,Values=carla-rl" "Name=instance-state-name,Values=running" \
+    --query "Reservations[].Instances[].PublicIpAddress" \
+    --output text)
+
+# SSH into the instance
+ssh -i ~/.ssh/id_ed25519 ubuntu@${INSTANCE_IP}
+```
+
+### 4. Monitor Training
+- Training logs are saved to the S3 bucket specified in `terraform.tfvars`
+- You can view the logs using AWS Console or AWS CLI:
+```bash
+aws s3 ls s3://attenfuse-carla-logs-bucket/
+```
+
+### 5. Cleanup
+When done, destroy the infrastructure:
+```bash
+cd terraform
+terraform destroy
+```
+
+For more details about the infrastructure setup, see `Infra.md`.
