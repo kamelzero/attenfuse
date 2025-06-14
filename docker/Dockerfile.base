@@ -11,7 +11,4 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
-# Install CARLA Python API
-RUN pip install --no-cache-dir carla==0.9.14
-
 WORKDIR /app
