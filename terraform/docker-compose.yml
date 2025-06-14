@@ -2,7 +2,7 @@ version: '3'
 
 services:
   carla-simulator:
-    image: carlasim/carla:0.9.14
+    image: carlasim/carla:0.9.15
     command: ./CarlaUE4.sh -RenderOffScreen -nosound -carla-rpc-port=2000
     deploy:
       resources:
