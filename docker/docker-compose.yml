@@ -3,7 +3,7 @@ version: '3'
 services:
   carla-simulator:
     image: carlasim/carla:0.9.14
-    command: ./CarlaUE4.sh -RenderOffScreen -carla-port=2000
+    command: ./CarlaUE4.sh -RenderOffScreen
     deploy:
       resources:
         reservations:
@@ -22,7 +22,6 @@ services:
       - SDL_HINT_CUDA_DEVICE=0
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=all
-      - DISPLAY=
     runtime: nvidia
 
   carla-client:
