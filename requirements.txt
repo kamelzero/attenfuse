@@ -1,3 +1,10 @@
-opencv-python
-stable-baselines3
+# Core dependencies
+numpy
 gymnasium
+opencv-python
+matplotlib
+torchvision
+stable-baselines3
+
+# CARLA dependencies
+carla==0.9.15

@@ -58,7 +58,7 @@ echo "Cloud-init completed successfully"
 # Start the Docker container
 echo "Starting Docker container..."
 ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no ubuntu@${INSTANCE_IP} \
-    "cd ~/attenfuse/docker && docker compose up -d"
+    "cd ~/attenfuse/docker && docker compose build && docker compose up -d"
 
 if [ $? -ne 0 ]; then
     echo "Error starting Docker container"
