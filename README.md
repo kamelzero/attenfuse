@@ -1,9 +1,11 @@
 # AttenFuse: Attention-based Sensor Fusion for Autonomous Driving
 
+> **Note:** The canonical Docker Compose file is at `docker/docker-compose.yml`. Do not use or maintain other compose files elsewhere in the project. All Docker-based workflows should reference this file.
+
 ## Prerequisites
 - Python 3.8+
 - CUDA 11.8+
-- CARLA Simulator 0.9.14
+- CARLA Simulator 0.9.15
 - Docker and Docker Compose
 
 ## Installation
