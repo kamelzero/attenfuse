@@ -1,7 +1,7 @@
 services:
   carla-simulator:
     image: carlasim/carla:0.9.15
-    command: ./CarlaUE4.sh -RenderOffScreen
+    command: ./CarlaUE4.sh -RenderOffScreen -nosound
     deploy:
       resources:
         reservations:
