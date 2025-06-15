@@ -42,6 +42,7 @@ GITHUB_TOKEN=$(aws ssm get-parameter \
 if [ ! -z "$GITHUB_TOKEN" ] && [ ! -d "/home/ubuntu/attenfuse" ]; then
     cd /home/ubuntu
     git clone https://oauth2:$GITHUB_TOKEN@github.com/AttenfusionRL/attenfuse.git
+    sudo chown -R ubuntu:ubuntu /home/ubuntu/attenfuse
 fi
 
 # Pull Docker images only if directory exists
