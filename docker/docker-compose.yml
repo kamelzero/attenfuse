@@ -1,9 +1,6 @@
 services:
   carla-simulator:
-    build:
-      context: .
-      dockerfile: Dockerfile.carla-patched-0.9.14
-    image: carla-simulator-patched-0.9.14
+    image: carlasim/carla:0.9.14
     command: ./CarlaUE4.sh -RenderOffScreen -nosound
     deploy:
       resources:
