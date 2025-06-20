@@ -2,8 +2,8 @@ services:
   carla-simulator:
     build:
       context: .
-      dockerfile: Dockerfile.carla-patched
-    image: carla-simulator-patched
+      dockerfile: Dockerfile.carla-patched-0.9.14
+    image: carla-simulator-patched-0.9.14
     command: ./CarlaUE4.sh -RenderOffScreen -nosound
     deploy:
       resources:
@@ -49,7 +49,7 @@ services:
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=all
-      - PYTHONPATH=/home/carla/PythonAPI/carla/dist/carla-0.9.15-py3.7-linux-x86_64.egg
+      - PYTHONPATH=/home/carla/PythonAPI/carla/dist/carla-0.9.14-py3.7-linux-x86_64.egg
     depends_on:
       - carla-simulator
 

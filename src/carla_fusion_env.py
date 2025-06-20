@@ -13,7 +13,7 @@ class CarlaFusionEnv(gym.Env):
 
         # Store reward function
         self.reward_fn = reward_fn or self._default_reward_fn
-        
+
         # Connect to CARLA
         self.client = carla.Client('localhost', 2000)
         self.client.set_timeout(10.0)
