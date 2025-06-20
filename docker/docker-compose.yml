@@ -18,6 +18,7 @@ services:
       context: ..
       dockerfile: docker/Dockerfile.base
     image: docker-carla
+    command: tail -f /dev/null
     volumes:
       - ..:/workspace
       - carla_python:/home/carla/PythonAPI
