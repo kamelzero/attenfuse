@@ -67,13 +67,13 @@ sudo apt install -y python3.10-dev libpython3.10
 echo "Installing Python dependencies for CARLA build..."
 pip install numpy pygame
 
-# Start a temporary CARLA container to get the source
-echo "Starting temporary CARLA container to extract source..."
+# Start a temporary CARLA 0.10.0 container to get the source
+echo "Starting temporary CARLA 0.10.0 container to extract source..."
 docker run --rm -d \
   --name temp-carla \
   --gpus all \
   --network host \
-  carlasim/carla:0.9.15 \
+  carlasim/carla:0.10.0 \
   sleep 60
 
 sleep 5
@@ -89,39 +89,52 @@ docker stop temp-carla
 echo "Building CARLA Python API for Python 3.10..."
 cd /tmp/carla-source
 
-# Check if we need to clean first (only if dist directory exists)
-if [ -d "PythonAPI/carla/dist" ]; then
-    echo "Cleaning previous build..."
-    rm -rf PythonAPI/carla/dist
-fi
+# Force clean rebuild by removing all build artifacts
+echo "Cleaning all build artifacts..."
+rm -rf PythonAPI/carla/dist
+rm -rf PythonAPI/carla/build
+rm -rf build
+rm -rf .build
+
+# Set environment variables for Python 3.10
+export PYTHON_VERSION=3.10
+export PYTHON_EXECUTABLE=$(which python)
+
+echo "Building for Python 3.10..."
+echo "Python executable: $PYTHON_EXECUTABLE"
+echo "Python version: $PYTHON_VERSION"
 
 # Build for Python 3.10
-echo "Building for Python 3.10..."
 make PythonAPI PYTHON_VERSION=3.10
 
 # Check if build was successful
-if [ -f "PythonAPI/carla/dist/carla-0.9.15-py3.10-linux-x86_64.egg" ]; then
+if [ -f "PythonAPI/carla/dist/carla-0.10.0-py3.10-linux-x86_64.egg" ]; then
     echo "✅ CARLA build successful!"
     
     # Install the rebuilt module
     echo "Installing rebuilt CARLA module..."
     cd /home/ubuntu/attenfuse
-    pip install /tmp/carla-source/PythonAPI/carla/dist/carla-0.9.15-py3.10-linux-x86_64.egg
+    pip install /tmp/carla-source/PythonAPI/carla/dist/carla-0.10.0-py3.10-linux-x86_64.egg
 else
-    echo "❌ CARLA build failed. Trying alternative approach..."
+    echo "❌ CARLA build failed. Checking what was built..."
     
-    # Try building without specifying Python version (might use system Python)
-    echo "Trying build without Python version specification..."
-    cd /tmp/carla-source
-    make PythonAPI
+    # Check what files were actually created
+    echo "Files in dist directory:"
+    ls -la PythonAPI/carla/dist/ 2>/dev/null || echo "No dist directory found"
     
-    if [ -f "PythonAPI/carla/dist/carla-0.9.15-py3.10-linux-x86_64.egg" ]; then
-        echo "✅ CARLA build successful with default Python!"
+    # Try to install whatever was built
+    if [ -d "PythonAPI/carla/dist" ]; then
+        echo "Trying to install any available egg/wheel files..."
         cd /home/ubuntu/attenfuse
-        pip install /tmp/carla-source/PythonAPI/carla/dist/carla-0.9.15-py3.10-linux-x86_64.egg
+        for file in /tmp/carla-source/PythonAPI/carla/dist/*.egg /tmp/carla-source/PythonAPI/carla/dist/*.whl; do
+            if [ -f "$file" ]; then
+                echo "Installing: $file"
+                pip install --no-deps --force-reinstall "$file"
+                break
+            fi
+        done
     else
-        echo "❌ All build attempts failed. Please check the build logs above."
-        echo "You may need to install additional dependencies or use a different approach."
+        echo "❌ No build artifacts found. Build completely failed."
         cd /home/ubuntu/attenfuse
     fi
 fi

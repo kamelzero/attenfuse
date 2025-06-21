@@ -25,7 +25,7 @@ This project uses CARLA simulator running in Docker with the client running on t
    - Create a virtual environment (`.venv`) using Python 3.10.13
    - Install PyTorch with CUDA 12.4 support
    - Install other dependencies from `requirements.txt`
-   - Rebuild CARLA Python API for Python 3.10 from source
+   - Build CARLA Python API for Python 3.10 from CARLA 0.10.0 source
 
 2. **Start CARLA simulator:**
    ```bash
@@ -56,8 +56,8 @@ This project uses CARLA simulator running in Docker with the client running on t
 - Check PyTorch CUDA support: `python -c "import torch; print(torch.cuda.is_available())"`
 
 **CARLA build fails:**
-- The setup script will automatically fall back to Python 3.7 if the build fails
 - Check system dependencies: `sudo apt install python3.10-dev libpython3.10`
+- CARLA 0.10.0 natively supports Python 3.8, 3.9, 3.10, 3.11, and 3.12
 
 ## Project Structure
 ```
@@ -84,7 +84,7 @@ chmod +x start_carla.sh
 ```
 
 This script will:
-- Pull and start the CARLA 0.9.15 simulator in a Docker container
+- Pull and start the CARLA 0.10.0 simulator in a Docker container
 - Wait for CARLA to initialize
 - Test the connection
 - Provide instructions for running training
@@ -108,7 +108,7 @@ docker run --rm -d \
   --name carla-simulator \
   --gpus all \
   --network host \
-  carlasim/carla:0.9.15 \
+  carlasim/carla:0.10.0 \
   ./CarlaUE4.sh -RenderOffScreen -nosound
 
 # Wait for CARLA to start, then run training
@@ -159,7 +159,7 @@ This project uses a hybrid approach:
 
 ## Docker Configuration
 The project uses a single Docker container for CARLA:
-- **CARLA Simulator**: `carlasim/carla:0.9.15` with GPU support
+- **CARLA Simulator**: `carlasim/carla:0.10.0` with GPU support
 - **Network**: Host networking for direct access
 - **GPU**: Full GPU access for rendering
 

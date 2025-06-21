@@ -20,7 +20,7 @@ docker run --rm -d \
   --name carla-simulator \
   --gpus all \
   --network host \
-  carlasim/carla:0.9.15 \
+  carlasim/carla:0.10.0 \
   /bin/bash -c "SDL_VIDEODRIVER=offscreen ./CarlaUE4.sh -opengl -nosound -RenderOffScreen -benchmark -fps=20 -quality-level=Low"
 
 # Wait for CARLA to start
