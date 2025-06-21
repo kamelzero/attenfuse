@@ -9,7 +9,7 @@ import os
 from carla_fusion_env import CarlaFusionEnv
 from fusion_attention_module import AttentionFusion
 
-def main(log=False, log_dir='debug_logs', rear_chase_camera=False, random_spawn=False, map_name='Town03'):
+def main(log=False, log_dir='debug_logs', rear_chase_camera=False, random_spawn=False, map_name='Town01'):
     env = CarlaFusionEnv(rear_chase_camera=rear_chase_camera, random_spawn=random_spawn, map_name=map_name)
     fusion = AttentionFusion()
 
@@ -22,7 +22,7 @@ def main(log=False, log_dir='debug_logs', rear_chase_camera=False, random_spawn=
     for step in range(10):
         step_start = time.time()
         action = env.action_space.sample()
-        obs, reward, done, _ = env.step(action)
+        obs, reward, terminated, truncated, info = env.step(action)
 
         # Fusion output
         rgb = torch.tensor(obs['rgb']).unsqueeze(0)
@@ -32,7 +32,7 @@ def main(log=False, log_dir='debug_logs', rear_chase_camera=False, random_spawn=
 
         step_time = time.time() - step_start
         print(f"\nStep {step}, action: {action}")
-        print(f"  Fused output: {fused.shape}, reward: {reward}, done: {done}, time: {step_time:.3f}s")
+        print(f"  Fused output: {fused.shape}, reward: {reward}, done: {terminated}, time: {step_time:.3f}s")
 
         if log:
             os.makedirs(log_dir, exist_ok=True)
