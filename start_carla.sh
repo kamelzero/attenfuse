@@ -18,7 +18,7 @@ if [ -d ".venv" ]; then
     source .venv/bin/activate
     echo "Using virtual environment"
 else
-    echo "Warning: .venv directory not found. Make sure CARLA is installed."
+    echo "Warning: .venv directory not found."
 fi
 
 python3 -c "

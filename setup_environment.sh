@@ -11,14 +11,40 @@ fi
 # Activate virtual environment
 source .venv/bin/activate
 
+echo "Upgrading pip..."
+pip install --upgrade pip
+
 echo "Installing PyTorch with CUDA 12.4 support (compatible with CUDA 12.8 drivers)..."
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
 
-echo "Installing CARLA..."
-pip install carla
-
 echo "Installing other requirements..."
 pip install -r requirements.txt
+
+echo "Setting up CARLA Python API..."
+echo "Note: CARLA will be installed from the simulator container's pre-built wheel."
+
+# Start a temporary CARLA container to get the wheel
+echo "Starting temporary CARLA container to extract Python API..."
+docker run --rm -d \
+  --name temp-carla \
+  --gpus all \
+  --network host \
+  carlasim/carla:0.9.15 \
+  sleep 60
+
+# Wait for container to be ready
+sleep 5
+
+# Copy the CARLA wheel from the container
+echo "Copying CARLA Python API from container..."
+docker cp temp-carla:/home/carla/PythonAPI/carla/dist/carla-0.9.15-py3.7-linux-x86_64.egg /tmp/
+
+# Install CARLA from the copied wheel
+echo "Installing CARLA from pre-built wheel..."
+pip install /tmp/carla-0.9.15-py3.7-linux-x86_64.egg
+
+# Clean up temporary container
+docker stop temp-carla
 
 echo "Testing CARLA installation..."
 python -c "import carla; print('✅ CARLA installed successfully')"
@@ -28,6 +54,7 @@ python -c "import torch; print(f'✅ PyTorch {torch.__version__} installed with 
 python -c "import torch; print(f'CUDA available: {torch.cuda.is_available()}')"
 python -c "import torch; print(f'CUDA version: {torch.version.cuda}')"
 
+echo ""
 echo "Environment setup complete!"
 echo "To activate: source .venv/bin/activate"
 echo "To start CARLA: ./start_carla.sh" 
