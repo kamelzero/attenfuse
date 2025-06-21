@@ -1,35 +1,45 @@
 #!/bin/bash
 
-# Start CARLA simulator in a container
+echo "Starting CARLA simulator and client..."
+
+# Check if virtual environment exists
+if [ ! -d ".venv" ]; then
+    echo "Virtual environment not found. Please run setup_environment.sh first."
+    exit 1
+fi
+
+# Activate the virtual environment
+source .venv/bin/activate
+
+echo "Using Python version: $(python --version)"
+echo "Python path: $(which python)"
+
+# Start CARLA simulator in the background
 echo "Starting CARLA simulator..."
 docker run --rm -d \
   --name carla-simulator \
   --gpus all \
   --network host \
   carlasim/carla:0.9.15 \
-  ./CarlaUE4.sh -RenderOffScreen -nosound
+  /bin/bash -c "SDL_VIDEODRIVER=offscreen ./CarlaUE4.sh -opengl -nosound -RenderOffScreen -benchmark -fps=20 -quality-level=Low"
 
-echo "CARLA simulator started. Waiting for it to be ready..."
-sleep 30
+# Wait for CARLA to start
+echo "Waiting for CARLA to start..."
+sleep 10
 
-echo "Testing CARLA connection..."
-# Activate pyenv environment if available
-if command -v pyenv &> /dev/null; then
-    pyenv activate attenfuse-env
-    echo "Using pyenv environment"
-    echo "Python version: $(python --version)"
-else
-    echo "Warning: pyenv not found."
+# Check if CARLA is running
+if ! docker ps | grep -q "carla-simulator"; then
+    echo "❌ CARLA simulator failed to start"
+    docker logs carla-simulator
+    exit 1
 fi
 
-python3 -c "
-import carla
-client = carla.Client('localhost', 2000)
-client.set_timeout(10.0)
-world = client.get_world()
-print('✅ CARLA is working!')
-print('Map:', world.get_map().name)
-"
+echo "✅ CARLA simulator started successfully"
 
-echo "CARLA is ready! You can now run your training script."
-echo "Run: pyenv activate attenfuse-env && python src/train_ppo_attention.py" 
+# Set PYTHONPATH to include CARLA Python API
+export PYTHONPATH="${PYTHONPATH}:/home/carla/PythonAPI/carla/dist"
+
+echo "Environment ready for training!"
+echo "You can now run your training scripts."
+echo ""
+echo "To stop CARLA: docker stop carla-simulator" 

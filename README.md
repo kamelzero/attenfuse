@@ -1,55 +1,59 @@
 # AttenFuse: Attention-based Sensor Fusion for Autonomous Driving
 
-> **Note:** This project uses a simplified setup with CARLA simulator running in Docker and the training client running on the host.
+A client for autonomous driving sensor fusion using the CARLA simulator.
 
-## Prerequisites
-- Python 3.8+
-- CUDA 11.8+
-- Docker and Docker Compose
-- NVIDIA GPU with proper drivers
+## Setup
 
-## Installation
+This project uses CARLA simulator running in Docker with the client running on the host system.
 
-### Quick Setup (Recommended)
-1. Clone the repository:
-```bash
-git clone https://github.com/AttenfusionRL/attenfuse.git
-cd attenfuse
-```
+### Prerequisites
 
-2. Run the setup script to install all dependencies:
-```bash
-chmod +x setup_environment.sh
-./setup_environment.sh
-```
+- Ubuntu 20.04+ with Docker and NVIDIA drivers installed
+- CUDA 12.8 drivers (compatible with CUDA 12.4 runtime)
+- At least 8GB RAM and 4GB VRAM
 
-This script will:
-- Create a Python virtual environment (`.venv`)
-- Install PyTorch with CUDA support
-- Install CARLA Python client
-- Install all other required dependencies
+### Quick Start
 
-### Manual Installation
-1. Create a virtual environment:
-```bash
-python3 -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-```
+1. **Setup the environment:**
+   ```bash
+   chmod +x setup_environment.sh
+   ./setup_environment.sh
+   ```
 
-2. Install PyTorch with CUDA support:
-```bash
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
-```
+   This script will:
+   - Install pyenv and Python 3.7.17 (required for CARLA compatibility)
+   - Create a virtual environment (`.venv`) using Python 3.7.17
+   - Install PyTorch with CUDA 12.4 support
+   - Install other dependencies from `requirements.txt`
+   - Install CARLA Python API from the simulator container
 
-3. Install CARLA:
-```bash
-pip install carla
-```
+2. **Start CARLA simulator:**
+   ```bash
+   chmod +x start_carla.sh
+   ./start_carla.sh
+   ```
 
-4. Install other dependencies:
-```bash
-pip install -r requirements.txt
-```
+3. **Activate the environment and run training:**
+   ```bash
+   source .venv/bin/activate
+   python src/train_ppo_attention.py
+   ```
+
+### Troubleshooting
+
+**CARLA container fails to start:**
+- Check GPU availability: `nvidia-smi`
+- Check Docker GPU support: `docker run --rm --gpus all nvidia/cuda:12.4-base-ubuntu20.04 nvidia-smi`
+- Check system resources: `free -h` and `df -h`
+
+**Python import errors:**
+- Ensure you're using Python 3.7: `python --version`
+- Activate the virtual environment: `source .venv/bin/activate`
+- Check CARLA installation: `python -c "import carla; print('OK')"`
+
+**CUDA errors:**
+- Verify CUDA drivers: `nvidia-smi`
+- Check PyTorch CUDA support: `python -c "import torch; print(torch.cuda.is_available())"`
 
 ## Project Structure
 ```
@@ -62,7 +66,7 @@ attenfuse/
 ├── docker/                # Docker configuration (for CARLA simulator only)
 ├── terraform/             # Infrastructure as Code
 ├── setup_environment.sh   # Environment setup script
-├── start_carla.sh         # CARLA simulator startup script
+├── start_carla.sh         # CARLA startup script
 └── requirements.txt       # Python dependencies
 ```
 

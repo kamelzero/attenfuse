@@ -37,14 +37,15 @@ fi
 # Create virtual environment with Python 3.7 if it doesn't exist
 if [ ! -d ".venv" ]; then
     echo "Creating virtual environment with Python 3.7.17..."
-    pyenv virtualenv 3.7.17 attenfuse-env
-    pyenv local attenfuse-env
+    # Use pyenv's Python 3.7.17 to create a regular virtual environment
+    ~/.pyenv/versions/3.7.17/bin/python -m venv .venv
 fi
 
-# Activate the pyenv environment
-pyenv activate attenfuse-env
+# Activate the virtual environment
+source .venv/bin/activate
 
 echo "Using Python version: $(python --version)"
+echo "Python path: $(which python)"
 
 echo "Upgrading pip..."
 pip install --upgrade pip
@@ -104,5 +105,5 @@ python -c "import torch; print(f'CUDA version: {torch.version.cuda}')"
 
 echo ""
 echo "Environment setup complete!"
-echo "To activate: pyenv activate attenfuse-env"
+echo "To activate: source .venv/bin/activate"
 echo "To start CARLA: ./start_carla.sh" 
