@@ -88,7 +88,15 @@ docker stop temp-carla
 # Build CARLA Python API for Python 3.10
 echo "Building CARLA Python API for Python 3.10..."
 cd /tmp/carla-source
-make clean
+
+# Check if we need to clean first (only if dist directory exists)
+if [ -d "PythonAPI/carla/dist" ]; then
+    echo "Cleaning previous build..."
+    rm -rf PythonAPI/carla/dist
+fi
+
+# Build for Python 3.10
+echo "Building for Python 3.10..."
 make PythonAPI PYTHON_VERSION=3.10
 
 # Check if build was successful
@@ -100,30 +108,29 @@ if [ -f "PythonAPI/carla/dist/carla-0.9.15-py3.10-linux-x86_64.egg" ]; then
     cd /home/ubuntu/attenfuse
     pip install /tmp/carla-source/PythonAPI/carla/dist/carla-0.9.15-py3.10-linux-x86_64.egg
 else
-    echo "❌ CARLA build failed. Falling back to Python 3.7..."
-    # Fallback to Python 3.7 approach
-    cd /home/ubuntu/attenfuse
+    echo "❌ CARLA build failed. Trying alternative approach..."
     
-    # Start another temporary container for Python 3.7 wheel
-    docker run --rm -d \
-      --name temp-carla-fallback \
-      --gpus all \
-      --network host \
-      carlasim/carla:0.9.15 \
-      sleep 60
+    # Try building without specifying Python version (might use system Python)
+    echo "Trying build without Python version specification..."
+    cd /tmp/carla-source
+    make PythonAPI
     
-    sleep 5
-    
-    docker cp temp-carla-fallback:/home/carla/PythonAPI/carla/dist /tmp/carla-dist
-    pip install --no-deps --force-reinstall /tmp/carla-dist/carla-0.9.15-cp37-cp37m-manylinux_2_27_x86_64.whl
-    docker stop temp-carla-fallback
+    if [ -f "PythonAPI/carla/dist/carla-0.9.15-py3.10-linux-x86_64.egg" ]; then
+        echo "✅ CARLA build successful with default Python!"
+        cd /home/ubuntu/attenfuse
+        pip install /tmp/carla-source/PythonAPI/carla/dist/carla-0.9.15-py3.10-linux-x86_64.egg
+    else
+        echo "❌ All build attempts failed. Please check the build logs above."
+        echo "You may need to install additional dependencies or use a different approach."
+        cd /home/ubuntu/attenfuse
+    fi
 fi
 
 # Clean up
 rm -rf /tmp/carla-source
 
 echo "Testing CARLA installation..."
-python -c "import carla; print('✅ CARLA installed successfully')"
+python -c "import carla; print('✅ CARLA installed successfully')" 2>/dev/null || echo "❌ CARLA installation failed"
 
 echo "Testing PyTorch CUDA installation..."
 python -c "import torch; print(f'✅ PyTorch {torch.__version__} installed with CUDA support')"
