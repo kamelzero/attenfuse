@@ -28,17 +28,17 @@ if ! command -v pyenv &> /dev/null; then
     exit 0
 fi
 
-# Check if Python 3.7.17 is available in pyenv
-if ! pyenv versions | grep -q "3.7.17"; then
-    echo "Python 3.7.17 not found in pyenv. Installing..."
-    pyenv install 3.7.17
+# Check if Python 3.10 is available in pyenv
+if ! pyenv versions | grep -q "3.10"; then
+    echo "Python 3.10 not found in pyenv. Installing..."
+    pyenv install 3.10.13
 fi
 
-# Create virtual environment with Python 3.7 if it doesn't exist
+# Create virtual environment with Python 3.10 if it doesn't exist
 if [ ! -d ".venv" ]; then
-    echo "Creating virtual environment with Python 3.7.17..."
-    # Use pyenv's Python 3.7.17 to create a regular virtual environment
-    ~/.pyenv/versions/3.7.17/bin/python -m venv .venv
+    echo "Creating virtual environment with Python 3.10..."
+    # Use pyenv's Python 3.10 to create a regular virtual environment
+    ~/.pyenv/versions/3.10.13/bin/python -m venv .venv
 fi
 
 # Activate the virtual environment
@@ -50,17 +50,25 @@ echo "Python path: $(which python)"
 echo "Upgrading pip..."
 pip install --upgrade pip
 
-echo "Installing PyTorch with CUDA 12.4 support (compatible with CUDA 12.8 drivers)..."
+echo "Installing PyTorch with CUDA 12.4 support..."
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
 
 echo "Installing other requirements..."
 pip install -r requirements.txt
 
-echo "Setting up CARLA Python API..."
-echo "Note: CARLA will be installed from the simulator container's pre-built wheel."
+echo "Setting up CARLA Python API for Python 3.10..."
 
-# Start a temporary CARLA container to get the wheel
-echo "Starting temporary CARLA container to extract Python API..."
+# Install system dependencies for CARLA build
+echo "Installing system dependencies for CARLA build..."
+sudo apt update
+sudo apt install -y python3.10-dev libpython3.10
+
+# Install Python dependencies for CARLA build
+echo "Installing Python dependencies for CARLA build..."
+pip install numpy pygame
+
+# Start a temporary CARLA container to get the source
+echo "Starting temporary CARLA container to extract source..."
 docker run --rm -d \
   --name temp-carla \
   --gpus all \
@@ -68,32 +76,51 @@ docker run --rm -d \
   carlasim/carla:0.9.15 \
   sleep 60
 
-# Wait for container to be ready
 sleep 5
 
-# Copy the CARLA dist directory from the container
-echo "Copying CARLA Python API from container..."
-docker cp temp-carla:/home/carla/PythonAPI/carla/dist /tmp/carla-dist
-
-# Check what's in the dist directory
-echo "Files in dist directory:"
-ls -la /tmp/carla-dist/
-
-# Install CARLA using the Python 3.7 wheel
-echo "Installing CARLA from pre-built wheel..."
-if [ -f "/tmp/carla-dist/carla-0.9.15-cp37-cp37m-manylinux_2_27_x86_64.whl" ]; then
-    echo "Found Python 3.7 wheel file, installing..."
-    pip install --no-deps --force-reinstall /tmp/carla-dist/carla-0.9.15-cp37-cp37m-manylinux_2_27_x86_64.whl
-elif [ -f "/tmp/carla-dist/carla-0.9.15-py3.7-linux-x86_64.egg" ]; then
-    echo "Found Python 3.7 egg file, installing..."
-    pip install --no-deps --force-reinstall /tmp/carla-dist/carla-0.9.15-py3.7-linux-x86_64.egg
-else
-    echo "No compatible wheel/egg found, trying find-links approach..."
-    pip install --find-links=/tmp/carla-dist --no-deps carla==0.9.15
-fi
+# Copy the CARLA source from the container
+echo "Copying CARLA source from container..."
+docker cp temp-carla:/home/carla /tmp/carla-source
 
 # Clean up temporary container
 docker stop temp-carla
+
+# Build CARLA Python API for Python 3.10
+echo "Building CARLA Python API for Python 3.10..."
+cd /tmp/carla-source
+make clean
+make PythonAPI PYTHON_VERSION=3.10
+
+# Check if build was successful
+if [ -f "PythonAPI/carla/dist/carla-0.9.15-py3.10-linux-x86_64.egg" ]; then
+    echo "✅ CARLA build successful!"
+    
+    # Install the rebuilt module
+    echo "Installing rebuilt CARLA module..."
+    cd /home/ubuntu/attenfuse
+    pip install /tmp/carla-source/PythonAPI/carla/dist/carla-0.9.15-py3.10-linux-x86_64.egg
+else
+    echo "❌ CARLA build failed. Falling back to Python 3.7..."
+    # Fallback to Python 3.7 approach
+    cd /home/ubuntu/attenfuse
+    
+    # Start another temporary container for Python 3.7 wheel
+    docker run --rm -d \
+      --name temp-carla-fallback \
+      --gpus all \
+      --network host \
+      carlasim/carla:0.9.15 \
+      sleep 60
+    
+    sleep 5
+    
+    docker cp temp-carla-fallback:/home/carla/PythonAPI/carla/dist /tmp/carla-dist
+    pip install --no-deps --force-reinstall /tmp/carla-dist/carla-0.9.15-cp37-cp37m-manylinux_2_27_x86_64.whl
+    docker stop temp-carla-fallback
+fi
+
+# Clean up
+rm -rf /tmp/carla-source
 
 echo "Testing CARLA installation..."
 python -c "import carla; print('✅ CARLA installed successfully')"

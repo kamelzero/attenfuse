@@ -1,4 +1,4 @@
-# AttenFuse: Attention-based Sensor Fusion for Autonomous Driving
+# AttenFuse
 
 A client for autonomous driving sensor fusion using the CARLA simulator.
 
@@ -21,11 +21,11 @@ This project uses CARLA simulator running in Docker with the client running on t
    ```
 
    This script will:
-   - Install pyenv and Python 3.7.17 (required for CARLA compatibility)
-   - Create a virtual environment (`.venv`) using Python 3.7.17
+   - Install pyenv and Python 3.10.13
+   - Create a virtual environment (`.venv`) using Python 3.10.13
    - Install PyTorch with CUDA 12.4 support
    - Install other dependencies from `requirements.txt`
-   - Install CARLA Python API from the simulator container
+   - Rebuild CARLA Python API for Python 3.10 from source
 
 2. **Start CARLA simulator:**
    ```bash
@@ -47,13 +47,17 @@ This project uses CARLA simulator running in Docker with the client running on t
 - Check system resources: `free -h` and `df -h`
 
 **Python import errors:**
-- Ensure you're using Python 3.7: `python --version`
+- Ensure you're using Python 3.10: `python --version`
 - Activate the virtual environment: `source .venv/bin/activate`
 - Check CARLA installation: `python -c "import carla; print('OK')"`
 
 **CUDA errors:**
 - Verify CUDA drivers: `nvidia-smi`
 - Check PyTorch CUDA support: `python -c "import torch; print(torch.cuda.is_available())"`
+
+**CARLA build fails:**
+- The setup script will automatically fall back to Python 3.7 if the build fails
+- Check system dependencies: `sudo apt install python3.10-dev libpython3.10`
 
 ## Project Structure
 ```
