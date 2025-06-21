@@ -28,17 +28,17 @@ if ! command -v pyenv &> /dev/null; then
     exit 0
 fi
 
-# Check if Python 3.12 is available in pyenv
-if ! pyenv versions | grep -q "3.12"; then
-    echo "Python 3.12 not found in pyenv. Installing..."
-    pyenv install 3.12.1
+# Check if Python 3.11 is available in pyenv (3.12 not available in Ubuntu 22.04)
+if ! pyenv versions | grep -q "3.11"; then
+    echo "Python 3.11 not found in pyenv. Installing..."
+    pyenv install 3.11.7
 fi
 
-# Create virtual environment with Python 3.12 if it doesn't exist
+# Create virtual environment with Python 3.11 if it doesn't exist
 if [ ! -d ".venv" ]; then
-    echo "Creating virtual environment with Python 3.12..."
-    # Use pyenv's Python 3.12 to create a regular virtual environment
-    ~/.pyenv/versions/3.12.1/bin/python -m venv .venv
+    echo "Creating virtual environment with Python 3.11..."
+    # Use pyenv's Python 3.11 to create a regular virtual environment
+    ~/.pyenv/versions/3.11.7/bin/python -m venv .venv
 fi
 
 # Activate the virtual environment
@@ -56,12 +56,12 @@ pip install torch torchvision torchaudio --index-url https://download.pytorch.or
 echo "Installing other requirements..."
 pip install -r requirements.txt
 
-echo "Setting up CARLA Python API for Python 3.12..."
+echo "Setting up CARLA Python API for Python 3.11..."
 
 # Install system dependencies for CARLA build
 echo "Installing system dependencies for CARLA build..."
 sudo apt update
-sudo apt install -y python3.12-dev libpython3.12 cmake build-essential
+sudo apt install -y python3.11-dev libpython3.11 cmake build-essential
 
 # Install Python dependencies for CARLA build
 echo "Installing Python dependencies for CARLA build..."
@@ -69,11 +69,11 @@ pip install numpy pygame
 
 # Try to install CARLA directly from pip first (simpler approach)
 echo "Attempting to install CARLA from pip..."
-pip install carla==0.10.0
+pip install carla==0.9.5
 
 # Test if pip installation worked
 if python -c "import carla; print('✅ CARLA installed successfully from pip')" 2>/dev/null; then
-    echo "Great! CARLA 0.10.0 installed successfully from pip."
+    echo "Great! CARLA 0.9.5 installed successfully from pip."
 else
     echo "Pip installation failed, trying build from source..."
     
@@ -88,69 +88,69 @@ else
 
     sleep 5
 
-    # Copy the CARLA source from the container
-    echo "Copying CARLA source from container..."
-    docker cp temp-carla:/home/carla /tmp/carla-source
+    # Copy the CARLA source from the container (only PythonAPI to save space)
+    echo "Copying CARLA PythonAPI from container..."
+    docker cp temp-carla:/home/carla/PythonAPI /tmp/carla-pythonapi
 
     # Clean up temporary container
     docker stop temp-carla
 
-    # Build CARLA Python API for Python 3.12
-    echo "Building CARLA Python API for Python 3.12..."
-    cd /tmp/carla-source
+    # Build CARLA Python API for Python 3.11
+    echo "Building CARLA Python API for Python 3.11..."
+    cd /tmp/carla-pythonapi
 
     # Check if there's a CMakeLists.txt file (new build system)
     if [ -f "CMakeLists.txt" ]; then
         echo "Using cmake build system..."
         mkdir -p build
         cd build
-        cmake .. -DPYTHON_VERSION=3.12
+        cmake .. -DPYTHON_VERSION=3.11
         make PythonAPI
     else
         echo "Using make build system..."
         # Force clean rebuild by removing all build artifacts
         echo "Cleaning all build artifacts..."
-        rm -rf PythonAPI/carla/dist
-        rm -rf PythonAPI/carla/build
+        rm -rf carla/dist
+        rm -rf carla/build
         rm -rf build
         rm -rf .build
 
-        # Set environment variables for Python 3.12
-        export PYTHON_VERSION=3.12
+        # Set environment variables for Python 3.11
+        export PYTHON_VERSION=3.11
         export PYTHON_EXECUTABLE=$(which python)
 
-        echo "Building for Python 3.12..."
+        echo "Building for Python 3.11..."
         echo "Python executable: $PYTHON_EXECUTABLE"
         echo "Python version: $PYTHON_VERSION"
 
         # Try different make targets
-        make PythonAPI PYTHON_VERSION=3.12 || make pythonapi || make python-api
+        make PythonAPI PYTHON_VERSION=3.11 || make pythonapi || make python-api || make
     fi
 
     # Check if build was successful
-    if [ -f "PythonAPI/carla/dist/carla-0.10.0-py3.12-linux-x86_64.egg" ] || [ -f "PythonAPI/carla/dist/carla-0.10.0-cp312-cp312-linux_x86_64.whl" ]; then
+    if [ -f "carla/dist/carla-0.10.0-py3.11-linux-x86_64.egg" ] || [ -f "carla/dist/carla-0.10.0-cp311-cp311-linux_x86_64.whl" ]; then
         echo "✅ CARLA build successful!"
         
         # Install the rebuilt module
         echo "Installing rebuilt CARLA module..."
         cd /home/ubuntu/attenfuse
-        if [ -f "/tmp/carla-source/PythonAPI/carla/dist/carla-0.10.0-py3.12-linux-x86_64.egg" ]; then
-            pip install /tmp/carla-source/PythonAPI/carla/dist/carla-0.10.0-py3.12-linux-x86_64.egg
-        elif [ -f "/tmp/carla-source/PythonAPI/carla/dist/carla-0.10.0-cp312-cp312-linux_x86_64.whl" ]; then
-            pip install /tmp/carla-source/PythonAPI/carla/dist/carla-0.10.0-cp312-cp312-linux_x86_64.whl
+        if [ -f "/tmp/carla-pythonapi/carla/dist/carla-0.10.0-py3.11-linux-x86_64.egg" ]; then
+            pip install /tmp/carla-pythonapi/carla/dist/carla-0.10.0-py3.11-linux-x86_64.egg
+        elif [ -f "/tmp/carla-pythonapi/carla/dist/carla-0.10.0-cp311-cp311-linux_x86_64.whl" ]; then
+            pip install /tmp/carla-pythonapi/carla/dist/carla-0.10.0-cp311-cp311-linux_x86_64.whl
         fi
     else
         echo "❌ CARLA build failed. Checking what was built..."
         
         # Check what files were actually created
         echo "Files in dist directory:"
-        ls -la PythonAPI/carla/dist/ 2>/dev/null || echo "No dist directory found"
+        ls -la carla/dist/ 2>/dev/null || echo "No dist directory found"
         
         # Try to install whatever was built
-        if [ -d "PythonAPI/carla/dist" ]; then
+        if [ -d "carla/dist" ]; then
             echo "Trying to install any available egg/wheel files..."
             cd /home/ubuntu/attenfuse
-            for file in /tmp/carla-source/PythonAPI/carla/dist/*.egg /tmp/carla-source/PythonAPI/carla/dist/*.whl; do
+            for file in /tmp/carla-pythonapi/carla/dist/*.egg /tmp/carla-pythonapi/carla/dist/*.whl; do
                 if [ -f "$file" ]; then
                     echo "Installing: $file"
                     pip install --no-deps --force-reinstall "$file"
@@ -164,7 +164,7 @@ else
     fi
 
     # Clean up
-    rm -rf /tmp/carla-source
+    rm -rf /tmp/carla-pythonapi
 fi
 
 echo "Testing CARLA installation..."

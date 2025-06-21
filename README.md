@@ -21,11 +21,11 @@ This project uses CARLA simulator running in Docker with the client running on t
    ```
 
    This script will:
-   - Install pyenv and Python 3.12.1
-   - Create a virtual environment (`.venv`) using Python 3.12.1
+   - Install pyenv and Python 3.11.7
+   - Create a virtual environment (`.venv`) using Python 3.11.7
    - Install PyTorch with CUDA 12.4 support
    - Install other dependencies from `requirements.txt`
-   - Install CARLA 0.10.0 Python API (supports Python 3.8-3.12)
+   - Install CARLA Python API (tries pip first, then builds from source)
 
 2. **Start CARLA simulator:**
    ```bash
@@ -47,7 +47,7 @@ This project uses CARLA simulator running in Docker with the client running on t
 - Check system resources: `free -h` and `df -h`
 
 **Python import errors:**
-- Ensure you're using Python 3.12: `python --version`
+- Ensure you're using Python 3.11: `python --version`
 - Activate the virtual environment: `source .venv/bin/activate`
 - Check CARLA installation: `python -c "import carla; print('OK')"`
 
@@ -56,8 +56,8 @@ This project uses CARLA simulator running in Docker with the client running on t
 - Check PyTorch CUDA support: `python -c "import torch; print(torch.cuda.is_available())"`
 
 **CARLA installation issues:**
-- CARLA 0.10.0 natively supports Python 3.8, 3.9, 3.10, 3.11, and 3.12
-- The setup tries pip installation first, then falls back to building from source
+- The setup tries pip installation first (CARLA 0.9.5), then falls back to building from source
+- CARLA 0.10.0 supports Python 3.8, 3.9, 3.10, 3.11, and 3.12
 
 ## Project Structure
 ```
