@@ -21,11 +21,11 @@ This project uses CARLA simulator running in Docker with the client running on t
    ```
 
    This script will:
-   - Install pyenv and Python 3.11.7
-   - Create a virtual environment (`.venv`) using Python 3.11.7
+   - Install pyenv and Python 3.10.13
+   - Create a virtual environment (`.venv`) using Python 3.10.13
    - Install PyTorch with CUDA 12.4 support
    - Install other dependencies from `requirements.txt`
-   - Install CARLA Python API (tries pip first, then builds from source)
+   - Install CARLA Python API using the local installation method
 
 2. **Start CARLA simulator:**
    ```bash
@@ -39,6 +39,39 @@ This project uses CARLA simulator running in Docker with the client running on t
    python src/train_ppo_attention.py
    ```
 
+### Working CARLA Setup
+
+The project uses a working combination of:
+- **Python 3.10.13** (via pyenv)
+- **CARLA 0.9.15** simulator (Docker container)
+- **CARLA 0.9.15 Python API** (local installation)
+- **PyTorch 2.6.0** with CUDA 12.4 support
+
+#### How CARLA was made to work:
+
+1. **Download CARLA 0.9.15 locally:**
+   ```bash
+   wget https://tiny.carla.org/carla-0-9-15-linux -O ~/Downloads/carla-0-9-15-linux.tar.gz
+   mkdir ~/carla-0-9-15
+   tar -xvzf ~/Downloads/carla-0-9-15-linux.tar.gz -C ~/carla-0-9-15
+   ```
+
+2. **Install CARLA Python API:**
+   ```bash
+   cd ~/carla-0-9-15/PythonAPI/carla/dist
+   pip install --find-links=. carla
+   ```
+
+3. **Start CARLA simulator:**
+   ```bash
+   docker run -d --name carla-simulator --gpus all --network host carlasim/carla:0.9.15 ./CarlaUE4.sh -RenderOffScreen -nosound
+   ```
+
+This approach works because:
+- The local CARLA installation provides Python API that's compatible with Python 3.10
+- The Docker container runs the simulator separately
+- The `--find-links=.` method installs the correct wheel for the Python version
+
 ### Troubleshooting
 
 **CARLA container fails to start:**
@@ -47,7 +80,7 @@ This project uses CARLA simulator running in Docker with the client running on t
 - Check system resources: `free -h` and `df -h`
 
 **Python import errors:**
-- Ensure you're using Python 3.11: `python --version`
+- Ensure you're using Python 3.10: `python --version`
 - Activate the virtual environment: `source .venv/bin/activate`
 - Check CARLA installation: `python -c "import carla; print('OK')"`
 
@@ -56,8 +89,33 @@ This project uses CARLA simulator running in Docker with the client running on t
 - Check PyTorch CUDA support: `python -c "import torch; print(torch.cuda.is_available())"`
 
 **CARLA installation issues:**
-- The setup tries pip installation first (CARLA 0.9.5), then falls back to building from source
-- CARLA 0.10.0 supports Python 3.8, 3.9, 3.10, 3.11, and 3.12
+- The setup uses the local CARLA installation method which works with Python 3.10
+- If pip installation fails, the local `--find-links=.` method should work
+
+**Depth processing errors:**
+- Fixed integer overflow in depth processing by using simpler approach
+- Uses first channel of depth data instead of complex bit manipulation
+
+### Project Structure
+
+```
+attenfuse/
+├── src/                    # Source code
+│   ├── train_ppo_attention.py
+│   └── ...
+├── requirements.txt        # Python dependencies
+├── setup_environment.sh    # Environment setup script
+├── start_carla.sh         # CARLA startup script
+└── README.md
+```
+
+### Notes
+
+- The project uses Python 3.10.13 with CARLA 0.9.15
+- CARLA simulator runs in Docker with GPU acceleration
+- Training code runs on the host system in a virtual environment
+- Uses local CARLA installation for Python API compatibility
+- Default map is Town01 (compatible with available maps)
 
 ## Project Structure
 ```

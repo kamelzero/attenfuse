@@ -8,7 +8,7 @@ import cv2
 import random
 
 class CarlaFusionEnv(gym.Env):
-    def __init__(self, rear_chase_camera=True, random_spawn=True, map_name="Town03", reward_fn=None):
+    def __init__(self, rear_chase_camera=True, random_spawn=True, map_name="Town01", reward_fn=None):
         super().__init__()
 
         # Store reward function
@@ -169,10 +169,11 @@ class CarlaFusionEnv(gym.Env):
         rgb = cv2.resize(rgb, (128, 128))
         rgb = rgb.transpose(2, 0, 1).astype(np.uint8)
 
-        # Depth processing - ensure float32
+        # Depth processing - fixed to avoid overflow
         raw_depth = np.frombuffer(self.depth_data.raw_data, dtype=np.uint8).reshape((600, 800, 4))
-        depth_raw = (raw_depth[:, :, 0] + raw_depth[:, :, 1] * 256 + raw_depth[:, :, 2] * 256 ** 2).astype(np.float32)
-        depth_meters = depth_raw / (256 ** 3 - 1) * 1000
+        # Use a simpler approach: just use the first channel as depth
+        depth_raw = raw_depth[:, :, 0].astype(np.float32)
+        depth_meters = depth_raw / 255.0 * 100  # Scale to reasonable range
         depth = cv2.resize(depth_meters, (128, 128))[np.newaxis, :, :].astype(np.float32)
         depth = np.clip(depth, 0, 100.0) / 100.0
         # Depth: normalize to [0, 255] and convert to uint8
