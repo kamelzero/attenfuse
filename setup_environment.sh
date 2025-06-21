@@ -2,14 +2,49 @@
 
 echo "Setting up Python environment for AttenFuse..."
 
-# Create virtual environment if it doesn't exist
-if [ ! -d ".venv" ]; then
-    echo "Creating virtual environment..."
-    python3 -m venv .venv
+# Check if pyenv is installed
+if ! command -v pyenv &> /dev/null; then
+    echo "pyenv not found. Installing pyenv..."
+    
+    # Install pyenv dependencies
+    sudo apt update
+    sudo apt install -y make build-essential libssl-dev zlib1g-dev \
+    libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm \
+    libncursesw5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev
+    
+    # Install pyenv
+    curl -fsSL https://pyenv.run | bash
+    
+    # Add pyenv to shell
+    echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bashrc
+    echo '[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bashrc
+    echo 'eval "$(pyenv init - bash)"' >> ~/.bashrc
+    
+    # Source the updated bashrc
+    source ~/.bashrc
+    
+    echo "pyenv installed. Please restart your terminal or run: source ~/.bashrc"
+    echo "Then run this script again."
+    exit 0
 fi
 
-# Activate virtual environment
-source .venv/bin/activate
+# Check if Python 3.7 is available in pyenv
+if ! pyenv versions | grep -q "3.7"; then
+    echo "Python 3.7 not found in pyenv. Installing..."
+    pyenv install 3.7.18
+fi
+
+# Create virtual environment with Python 3.7 if it doesn't exist
+if [ ! -d ".venv" ]; then
+    echo "Creating virtual environment with Python 3.7..."
+    pyenv virtualenv 3.7.18 attenfuse-env
+    pyenv local attenfuse-env
+fi
+
+# Activate the pyenv environment
+pyenv activate attenfuse-env
+
+echo "Using Python version: $(python --version)"
 
 echo "Upgrading pip..."
 pip install --upgrade pip
@@ -39,9 +74,22 @@ sleep 5
 echo "Copying CARLA Python API from container..."
 docker cp temp-carla:/home/carla/PythonAPI/carla/dist /tmp/carla-dist
 
-# Install CARLA using --find-links pointing to the directory
+# Check what's in the dist directory
+echo "Files in dist directory:"
+ls -la /tmp/carla-dist/
+
+# Install CARLA using the Python 3.7 wheel
 echo "Installing CARLA from pre-built wheel..."
-pip install --find-links=/tmp/carla-dist carla
+if [ -f "/tmp/carla-dist/carla-0.9.15-cp37-cp37m-manylinux_2_27_x86_64.whl" ]; then
+    echo "Found Python 3.7 wheel file, installing..."
+    pip install --no-deps --force-reinstall /tmp/carla-dist/carla-0.9.15-cp37-cp37m-manylinux_2_27_x86_64.whl
+elif [ -f "/tmp/carla-dist/carla-0.9.15-py3.7-linux-x86_64.egg" ]; then
+    echo "Found Python 3.7 egg file, installing..."
+    pip install --no-deps --force-reinstall /tmp/carla-dist/carla-0.9.15-py3.7-linux-x86_64.egg
+else
+    echo "No compatible wheel/egg found, trying find-links approach..."
+    pip install --find-links=/tmp/carla-dist --no-deps carla==0.9.15
+fi
 
 # Clean up temporary container
 docker stop temp-carla
@@ -56,7 +104,6 @@ python -c "import torch; print(f'CUDA version: {torch.version.cuda}')"
 
 echo ""
 echo "Environment setup complete!"
+echo "To activate: pyenv activate attenfuse-env"
 echo "To activate: source .venv/bin/activate"
-echo "To start CARLA: ./start_carla.sh"
-echo ""
-echo "Note: CARLA is set up via PYTHONPATH. The start_carla.sh script will handle this automatically." 
+echo "To start CARLA: ./start_carla.sh" 

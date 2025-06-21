@@ -13,12 +13,13 @@ echo "CARLA simulator started. Waiting for it to be ready..."
 sleep 30
 
 echo "Testing CARLA connection..."
-# Activate virtual environment if it exists
-if [ -d ".venv" ]; then
-    source .venv/bin/activate
-    echo "Using virtual environment"
+# Activate pyenv environment if available
+if command -v pyenv &> /dev/null; then
+    pyenv activate attenfuse-env
+    echo "Using pyenv environment"
+    echo "Python version: $(python --version)"
 else
-    echo "Warning: .venv directory not found."
+    echo "Warning: pyenv not found."
 fi
 
 python3 -c "
@@ -31,4 +32,4 @@ print('Map:', world.get_map().name)
 "
 
 echo "CARLA is ready! You can now run your training script."
-echo "Run: source .venv/bin/activate && python src/train_ppo_attention.py" 
+echo "Run: pyenv activate attenfuse-env && python src/train_ppo_attention.py" 
