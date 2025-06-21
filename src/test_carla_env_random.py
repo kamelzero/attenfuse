@@ -25,9 +25,9 @@ def main(log=False, log_dir='debug_logs', rear_chase_camera=False, random_spawn=
         obs, reward, terminated, truncated, info = env.step(action)
 
         # Fusion output
-        rgb = torch.tensor(obs['rgb']).unsqueeze(0)
-        depth = torch.tensor(obs['depth']).unsqueeze(0)
-        lidar = torch.tensor(obs['lidar']).unsqueeze(0)
+        rgb = torch.tensor(obs['rgb'], dtype=torch.float32).unsqueeze(0) / 255.0
+        depth = torch.tensor(obs['depth'], dtype=torch.float32).unsqueeze(0) / 255.0
+        lidar = torch.tensor(obs['lidar'], dtype=torch.float32).unsqueeze(0) / 255.0
         fused = fusion(rgb, depth, lidar)
 
         step_time = time.time() - step_start
