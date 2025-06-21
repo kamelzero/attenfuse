@@ -35,13 +35,13 @@ docker run --rm -d \
 # Wait for container to be ready
 sleep 5
 
-# Copy the CARLA wheel from the container
+# Copy the CARLA dist directory from the container
 echo "Copying CARLA Python API from container..."
-docker cp temp-carla:/home/carla/PythonAPI/carla/dist/carla-0.9.15-py3.7-linux-x86_64.egg /tmp/
+docker cp temp-carla:/home/carla/PythonAPI/carla/dist /tmp/carla-dist
 
-# Install CARLA from the copied wheel
+# Install CARLA using --find-links pointing to the directory
 echo "Installing CARLA from pre-built wheel..."
-pip install /tmp/carla-0.9.15-py3.7-linux-x86_64.egg
+pip install --find-links=/tmp/carla-dist carla
 
 # Clean up temporary container
 docker stop temp-carla
@@ -57,4 +57,6 @@ python -c "import torch; print(f'CUDA version: {torch.version.cuda}')"
 echo ""
 echo "Environment setup complete!"
 echo "To activate: source .venv/bin/activate"
-echo "To start CARLA: ./start_carla.sh" 
+echo "To start CARLA: ./start_carla.sh"
+echo ""
+echo "Note: CARLA is set up via PYTHONPATH. The start_carla.sh script will handle this automatically." 
