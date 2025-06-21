@@ -13,6 +13,12 @@ echo "CARLA simulator started. Waiting for it to be ready..."
 sleep 30
 
 echo "Testing CARLA connection..."
+# Activate virtual environment if it exists
+if [ -d "venv" ]; then
+    source venv/bin/activate
+    echo "Using virtual environment"
+fi
+
 python3 -c "
 import carla
 client = carla.Client('localhost', 2000)
@@ -23,4 +29,4 @@ print('Map:', world.get_map().name)
 "
 
 echo "CARLA is ready! You can now run your training script."
-echo "Run: python src/train_ppo_attention.py" 
+echo "Run: source venv/bin/activate && python src/train_ppo_attention.py" 
