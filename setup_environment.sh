@@ -28,16 +28,16 @@ if ! command -v pyenv &> /dev/null; then
     exit 0
 fi
 
-# Check if Python 3.7 is available in pyenv
-if ! pyenv versions | grep -q "3.7"; then
-    echo "Python 3.7 not found in pyenv. Installing..."
-    pyenv install 3.7.18
+# Check if Python 3.7.17 is available in pyenv
+if ! pyenv versions | grep -q "3.7.17"; then
+    echo "Python 3.7.17 not found in pyenv. Installing..."
+    pyenv install 3.7.17
 fi
 
 # Create virtual environment with Python 3.7 if it doesn't exist
 if [ ! -d ".venv" ]; then
-    echo "Creating virtual environment with Python 3.7..."
-    pyenv virtualenv 3.7.18 attenfuse-env
+    echo "Creating virtual environment with Python 3.7.17..."
+    pyenv virtualenv 3.7.17 attenfuse-env
     pyenv local attenfuse-env
 fi
 
@@ -105,5 +105,4 @@ python -c "import torch; print(f'CUDA version: {torch.version.cuda}')"
 echo ""
 echo "Environment setup complete!"
 echo "To activate: pyenv activate attenfuse-env"
-echo "To activate: source .venv/bin/activate"
 echo "To start CARLA: ./start_carla.sh" 
