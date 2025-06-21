@@ -14,9 +14,11 @@ sleep 30
 
 echo "Testing CARLA connection..."
 # Activate virtual environment if it exists
-if [ -d "venv" ]; then
-    source venv/bin/activate
+if [ -d ".venv" ]; then
+    source .venv/bin/activate
     echo "Using virtual environment"
+else
+    echo "Warning: .venv directory not found. Make sure CARLA is installed."
 fi
 
 python3 -c "
@@ -29,4 +31,4 @@ print('Map:', world.get_map().name)
 "
 
 echo "CARLA is ready! You can now run your training script."
-echo "Run: source venv/bin/activate && python src/train_ppo_attention.py" 
+echo "Run: source .venv/bin/activate && python src/train_ppo_attention.py" 

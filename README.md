@@ -1,42 +1,52 @@
 # AttenFuse: Attention-based Sensor Fusion for Autonomous Driving
 
-> **Note:** The canonical Docker Compose file is at `docker/docker-compose.yml`. Do not use or maintain other compose files elsewhere in the project. All Docker-based workflows should reference this file.
+> **Note:** This project uses a simplified setup with CARLA simulator running in Docker and the training client running on the host.
 
 ## Prerequisites
 - Python 3.8+
 - CUDA 11.8+
-- CARLA Simulator 0.9.15
 - Docker and Docker Compose
+- NVIDIA GPU with proper drivers
 
 ## Installation
 
-### Using Docker (Recommended)
+### Quick Setup (Recommended)
 1. Clone the repository:
 ```bash
 git clone https://github.com/AttenfusionRL/attenfuse.git
 cd attenfuse
 ```
 
-2. Build and start the containers:
+2. Run the setup script to install all dependencies:
 ```bash
-cd docker
-docker compose up -d
+chmod +x setup_environment.sh
+./setup_environment.sh
 ```
 
-### Local Installation
-1. Clone the repository:
+This script will:
+- Create a Python virtual environment (`.venv`)
+- Install PyTorch with CUDA support
+- Install CARLA Python client
+- Install all other required dependencies
+
+### Manual Installation
+1. Create a virtual environment:
 ```bash
-git clone https://github.com/AttenfusionRL/attenfuse.git
-cd attenfuse
+python3 -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 ```
 
-2. Create a virtual environment:
+2. Install PyTorch with CUDA support:
 ```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 ```
 
-3. Install dependencies:
+3. Install CARLA:
+```bash
+pip install carla
+```
+
+4. Install other dependencies:
 ```bash
 pip install -r requirements.txt
 ```
@@ -49,33 +59,52 @@ attenfuse/
 │   ├── environments/      # CARLA environment wrappers
 │   ├── utils/             # Utility functions
 │   └── tests/             # Test files
-├── docker/                # Docker configuration
+├── docker/                # Docker configuration (for CARLA simulator only)
 ├── terraform/             # Infrastructure as Code
+├── setup_environment.sh   # Environment setup script
+├── start_carla.sh         # CARLA simulator startup script
 └── requirements.txt       # Python dependencies
 ```
 
 ## Usage
 
-### Running with Docker
-1. Start the containers:
-```bash
-cd docker
-docker compose up -d
-```
-
-2. Run the training script:
-```bash
-docker compose exec attenfuse python src/train_ppo_attention.py
-```
-
-### Running Locally
+### Starting CARLA Simulator
 1. Start the CARLA simulator:
 ```bash
-./CarlaUE4.sh -carla-port=2000
+chmod +x start_carla.sh
+./start_carla.sh
+```
+
+This script will:
+- Pull and start the CARLA 0.9.15 simulator in a Docker container
+- Wait for CARLA to initialize
+- Test the connection
+- Provide instructions for running training
+
+### Running Training
+1. Activate the virtual environment:
+```bash
+source .venv/bin/activate
 ```
 
 2. Run the training script:
 ```bash
+python src/train_ppo_attention.py
+```
+
+### Alternative: Manual CARLA Startup
+If you prefer to start CARLA manually:
+```bash
+# Start CARLA simulator
+docker run --rm -d \
+  --name carla-simulator \
+  --gpus all \
+  --network host \
+  carlasim/carla:0.9.15 \
+  ./CarlaUE4.sh -RenderOffScreen -nosound
+
+# Wait for CARLA to start, then run training
+source .venv/bin/activate
 python src/train_ppo_attention.py
 ```
 
@@ -103,19 +132,64 @@ reward_config = RewardConfig(
 ## Testing
 Run the test suite:
 ```bash
+source .venv/bin/activate
 python -m pytest src/tests/
 ```
 
-## Docker Configuration
-The project uses two Docker containers:
-1. CARLA Simulator (carlasim/carla:0.9.14)
-2. AttenFuse client (custom image with Python dependencies)
+## Architecture
+This project uses a hybrid approach:
+- **CARLA Simulator**: Runs in Docker container for GPU access and isolation
+- **Training Client**: Runs on host for simplicity and performance
+- **Communication**: Via localhost:2000
 
-The Docker setup includes:
-- GPU support through NVIDIA Container Toolkit
-- Volume mounting for code and data
-- Network configuration for CARLA communication
-- Environment variable configuration
+### Benefits of This Approach
+- **Simpler setup**: No complex container networking
+- **Better performance**: Direct access to host resources
+- **Easier debugging**: Run Python scripts directly
+- **Flexible development**: Easy to modify and test code
+- **Minimal disk usage**: Only pull CARLA image when needed
+
+## Docker Configuration
+The project uses a single Docker container for CARLA:
+- **CARLA Simulator**: `carlasim/carla:0.9.15` with GPU support
+- **Network**: Host networking for direct access
+- **GPU**: Full GPU access for rendering
+
+## Troubleshooting
+
+### CARLA Connection Issues
+If CARLA fails to start or connect:
+```bash
+# Check if CARLA is running
+docker ps | grep carla
+
+# Check CARLA logs
+docker logs carla-simulator
+
+# Restart CARLA
+docker stop carla-simulator
+./start_carla.sh
+```
+
+### Python Import Issues
+If you get import errors:
+```bash
+# Make sure virtual environment is activated
+source .venv/bin/activate
+
+# Reinstall dependencies
+./setup_environment.sh
+```
+
+### Disk Space Issues
+To free up disk space:
+```bash
+# Remove unused Docker images
+docker image prune -a -f
+
+# Remove build cache
+docker builder prune -a -f
+```
 
 ## License
 This project is licensed under the MIT License - see the LICENSE file for details.
