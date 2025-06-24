@@ -7,7 +7,19 @@ sudo apt-get install -y \
     ca-certificates \
     curl \
     software-properties-common \
-    git
+    git \
+    xdg-user-dirs \
+    libgl1-mesa-glx \
+    xvfb \
+    mesa-utils \
+    libglu1-mesa \
+    libxi6 \
+    libxmu6 \
+    libxrender1 \
+    libxext6 \
+    libglvnd0 \
+    libglx0 \
+    libegl1-mesa
 
 # Install Docker
 curl -fsSL https://get.docker.com -o get-docker.sh
@@ -30,6 +42,7 @@ GITHUB_TOKEN=$(aws ssm get-parameter \
 if [ ! -z "$GITHUB_TOKEN" ] && [ ! -d "/home/ubuntu/attenfuse" ]; then
     cd /home/ubuntu
     git clone https://oauth2:$GITHUB_TOKEN@github.com/AttenfusionRL/attenfuse.git
+    sudo chown -R ubuntu:ubuntu /home/ubuntu/attenfuse
 fi
 
 # Pull Docker images only if directory exists
@@ -60,9 +73,7 @@ source /etc/environment
 # Ensure the environment variable is available to the docker-compose service
 echo "export BUCKET_NAME=${bucket_name}" >> /home/ubuntu/.bashrc
 
-# Install xvfb
-sudo apt-get update
-sudo apt-get install -y xvfb
+# Create /tmp/xdg-runtime-dir with correct permissions
 sudo mkdir -p /tmp/xdg-runtime-dir
 sudo chmod 700 /tmp/xdg-runtime-dir
 

@@ -1,0 +1,16 @@
+FROM carlasim/carla:0.9.15
+USER root
+RUN apt-get update && apt-get install -y \
+    xdg-user-dirs \
+    libgl1-mesa-glx \
+    xvfb \
+    mesa-utils \
+    libglu1-mesa \
+    libxi6 \
+    libxmu6 \
+    libxrender1 \
+    libxext6 \
+    libglvnd0 \
+    libglx0 \
+    libegl1-mesa
+USER carla

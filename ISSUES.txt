@@ -1,0 +1,12 @@
+1.
+When I ssh'd into the instance, I had to use sudo on git.
+To fix that, from the attenfuse directory, I had to run: sudo chown -R $(whoami):$(whoami) .
+I shouldn't have to do that manualy; need to look into whether scripts need to be modified.
+
+2.
+when I try install opencv and carla.
+I shouldn't need to do this manually.
+
+I need to run:
+ pip install --upgrade pip
+ pip install -r requirements.txt

@@ -8,8 +8,11 @@ import cv2
 import random
 
 class CarlaFusionEnv(gym.Env):
-    def __init__(self, rear_chase_camera=True, random_spawn=True, map_name="Town03"):
+    def __init__(self, rear_chase_camera=True, random_spawn=True, map_name="Town01", reward_fn=None):
         super().__init__()
+
+        # Store reward function
+        self.reward_fn = reward_fn or self._default_reward_fn
 
         # Connect to CARLA
         self.client = carla.Client('localhost', 2000)
@@ -135,7 +138,7 @@ class CarlaFusionEnv(gym.Env):
                 carla.Rotation(pitch=-90)
             ))
 
-        self.world.tick() #  Only do this when you are not also running other client scripts, or you'll get race conditions.
+        self.world.tick()
         obs = self._get_obs()
 
         # Count low-speed frames
@@ -145,14 +148,12 @@ class CarlaFusionEnv(gym.Env):
         else:
             self.stuck_counter = 0
 
-        # Encourage movement
-        reward = speed / 10.0
-        terminated = self.stuck_counter > 30  # ~1.5 seconds stuck
-        if terminated:
-            reward -= 5.0
-        # Penalize being stuck
-        if speed < 0.5:
-            reward -= 0.1  # mild penalty every step
+        # Get reward and termination from reward function
+        reward, terminated = self.reward_fn(
+            speed=speed,
+            stuck_counter=self.stuck_counter,
+            step_counter=getattr(self, "step_counter", 0)
+        )
 
         self.step_counter = getattr(self, "step_counter", 0)
         self.step_counter += 1
@@ -168,10 +169,11 @@ class CarlaFusionEnv(gym.Env):
         rgb = cv2.resize(rgb, (128, 128))
         rgb = rgb.transpose(2, 0, 1).astype(np.uint8)
 
-        # Depth processing - ensure float32
+        # Depth processing - fixed to avoid overflow
         raw_depth = np.frombuffer(self.depth_data.raw_data, dtype=np.uint8).reshape((600, 800, 4))
-        depth_raw = (raw_depth[:, :, 0] + raw_depth[:, :, 1] * 256 + raw_depth[:, :, 2] * 256 ** 2).astype(np.float32)
-        depth_meters = depth_raw / (256 ** 3 - 1) * 1000
+        # Use a simpler approach: just use the first channel as depth
+        depth_raw = raw_depth[:, :, 0].astype(np.float32)
+        depth_meters = depth_raw / 255.0 * 100  # Scale to reasonable range
         depth = cv2.resize(depth_meters, (128, 128))[np.newaxis, :, :].astype(np.float32)
         depth = np.clip(depth, 0, 100.0) / 100.0
         # Depth: normalize to [0, 255] and convert to uint8
@@ -212,3 +214,13 @@ class CarlaFusionEnv(gym.Env):
                 sensor.stop()
                 sensor.destroy()
         self.rgb, self.depth, self.lidar = None, None, None
+
+    def _default_reward_fn(self, speed, stuck_counter, step_counter):
+        """Default reward function that can be overridden."""
+        reward = speed / 10.0
+        terminated = stuck_counter > 30  # ~1.5 seconds stuck
+        if terminated:
+            reward -= 5.0
+        if speed < 0.5:
+            reward -= 0.1
+        return reward, terminated
